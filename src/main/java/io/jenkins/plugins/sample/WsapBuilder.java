@@ -13,25 +13,47 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import java.io.IOException;
 
 public class WsapBuilder extends Builder {
-    private long time;
+    private String ipAddress;
+    private int port;
+    private String apiKey;
 
     @DataBoundConstructor
-    public WsapBuilder(long time){
-        this.time = time;
+    public WsapBuilder(String ipAddress, int port, String apiKey){
+        this.ipAddress = ipAddress;
+        this.port = port;
+        this.apiKey = apiKey;
     }
 
-    public long getTime() {
-        return time;
+    public String getIpAddress() {
+        return ipAddress;
     }
 
-    public void setTime(long time) {
-        this.time = time;
+    public void setIpAddress(String ipAddress) {
+        this.ipAddress = ipAddress;
+    }
+
+    public int getPort() {
+        return port;
+    }
+
+    public void setPort(int port) {
+        this.port = port;
+    }
+
+    public String getApiKey() {
+        return apiKey;
+    }
+
+    public void setApiKey(String key) {
+        this.apiKey = apiKey;
     }
 
     @Override
     public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) throws InterruptedException, IOException {
-        listener.getLogger().println("Sleeping time "+time+"ms.");
-        Thread.sleep(time);
+        listener.getLogger().println("ipAddress: "+this.ipAddress);
+        listener.getLogger().println("port: "+this.port);
+        listener.getLogger().println("key: "+this.apiKey);
+        //Thread.sleep(time);
         return true;
     }
 

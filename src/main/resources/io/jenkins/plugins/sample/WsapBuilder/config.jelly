@@ -1,6 +1,18 @@
 <?jelly escape-by-default='true'?>
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
-    <f:entry title="Time" field="time">
-        <f:textbox />
-    </f:entry>
+    <f:section title="Static Analysis">
+
+    </f:section>
+    <f:section title="Dynamic Analysis">
+        <f:entry title="IP Address" field="ipAddress">
+            <f:textbox />
+        </f:entry>
+        <f:entry title="Port" field="port">
+            <f:textbox />
+        </f:entry>
+        <f:entry title="ZAP APIKey" field="apiKey">
+            <f:textbox />
+        </f:entry>
+    </f:section>
+    
 </j:jelly>
