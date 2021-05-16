@@ -5,14 +5,36 @@
     </f:section>
     <f:section title="Dynamic Analysis">
         <f:entry title="IP Address" field="ipAddress">
-            <f:textbox />
+            <f:textbox default="127.0.0.1"/>
         </f:entry>
+
         <f:entry title="Port" field="port">
-            <f:textbox />
+            <f:textbox default="8080"/>
         </f:entry>
-        <f:entry title="ZAP APIKey" field="apiKey">
-            <f:textbox />
+
+        <f:entry title="Scan Method:" field="scanMethod">
+            <f:entry>
+                <f:radioBlock name="scanMethod" title="Full" value="FULL" checked="true" inline="true">
+                        <f:nested>
+                            <f:entry title="API URL" field="apiUrl" description="Provide the API base url">
+                                <f:textbox/>
+                            </f:entry>
+                            <f:entry title="API Definition" field="apiDefinition" description="Provide the API Definition URI location ">
+                                <f:textbox/>
+                            </f:entry>
+                        </f:nested>
+                </f:radioBlock>
+            </f:entry>
+            <f:entry>
+                <f:radio name="scanMethod" title="Traditional" value="TRADITIONAL"/>
+            </f:entry>
+            <f:entry>
+                <f:radio name="scanMethod" title="Ajax" value="AJAX"/>
+            </f:entry>
+        </f:entry>
+
+        <f:entry title="Perform Attack:" field="performAttack">
+            <f:checkbox checked="true"></f:checkbox>
         </f:entry>
     </f:section>
-    
 </j:jelly>

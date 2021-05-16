@@ -7,10 +7,13 @@ import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.BuildListener;
 import hudson.tasks.BuildStepDescriptor;
+import hudson.util.FormValidation;
 import org.kohsuke.stapler.DataBoundConstructor;
 import hudson.tasks.Builder;
 
 import java.io.IOException;
+import hudson.model.Result;
+import org.kohsuke.stapler.QueryParameter;
 
 public class SleepBuilder extends Builder{
     private long time;
@@ -47,6 +50,18 @@ public class SleepBuilder extends Builder{
         @Override
         public String getDisplayName() {
             return "SleepBuild";
+        }
+
+        public FormValidation doCheckTime(@QueryParameter String time){
+            try{
+                if (Long.valueOf(time)<0) {
+                    return FormValidation.error("Please enter a positive number");
+                }else{
+                    return FormValidation.ok();
+                }
+            }catch (Exception ex){
+                return FormValidation.error("Please enter a valid number");
+            }
         }
     }
 }
