@@ -4,37 +4,89 @@
 
     </f:section>
     <f:section title="Dynamic Analysis">
-        <f:entry title="IP Address" field="ipAddress">
-            <f:textbox default="127.0.0.1"/>
+        <f:entry title="Scanner Properties:">
+                <f:entry title="IP Address" field="ipAddress">
+                    <f:textbox default="${descriptor.SCANNER_IP}"/>
+                </f:entry>
+
+                <f:entry title="Port" field="port">
+                    <f:textbox default="${descriptor.SCANNER_PORT}"/>
+                </f:entry>
         </f:entry>
 
-        <f:entry title="Port" field="port">
-            <f:textbox default="8080"/>
+        <f:entry title="Analysis Properties:">
+                <f:entry title="Target Url" field="targetUrl">
+                    <f:textbox default="${descriptor.TARGET}"/>
+                </f:entry>
+
+                <f:entry title="Scan Method:" field="scanMethod">
+                    <f:entry>
+                        <f:radioBlock name="scanMethod" title="Full" value="FULL" checked="true" inline="true">
+                                <f:nested>
+                                    <f:entry title="API URL" field="apiUrl" description="Provide the API base url">
+                                        <f:textbox default="${descriptor.API_URL}"/>
+                                    </f:entry>
+                                    <f:entry title="API Definition" field="apiDefinition" description="Provide the API Definition URI location ">
+                                        <f:textbox default="${descriptor.API_DEFINITION}"/>
+                                    </f:entry>
+                                </f:nested>
+                        </f:radioBlock>
+                    </f:entry>
+                    <f:entry>
+                        <f:radio name="scanMethod" title="Traditional" value="TRADITIONAL"/>
+                    </f:entry>
+                    <f:entry>
+                        <f:radio name="scanMethod" title="Ajax" value="AJAX"/>
+                    </f:entry>
+                </f:entry>
+
+                <f:entry title="Perform Attack:" field="performAttack">
+                    <f:checkbox checked="true"></f:checkbox>
+                </f:entry>
+
+                <f:optionalBlock name="useLogin" title="Use Login?" checked="false" inline="true">
+                    <f:entry title="Login Url:" field="loginUrl">
+                        <f:textbox default="${descriptor.API_URL}/authentication/login"/>
+                    </f:entry>
+                    <f:entry title="JSON Data:" field="requestJson" help="Should describe the JSON request structure required for a successful login">
+                        <f:textarea field="requestJson" value="${descriptor.JSON_LOGIN_REQUEST}" codemirror-mode="groovy"/>
+                    </f:entry>
+                    <f:entry title="Username field:" field="usernameField" help="Identifies the username field provided previously">
+                        <f:textbox default='${descriptor.JSON_LOGIN_USERNAME_FIELD}'/>
+                    </f:entry>
+                    <f:entry title="Password field:" field="passwordField" help="Identifies the password field provided previously">
+                        <f:textbox default='${descriptor.JSON_LOGIN_PASSWORD_FIELD}'/>
+                    </f:entry>
+
+                    <f:entry title="Logged In Regex:" field="loggedInRegex" help="Optional Regex that can be used to identify a successful logged-in state" >
+                        <f:textbox default="${descriptor.LOGGED_IN_REGGEX}"/>
+                    </f:entry>
+                    <f:entry title="Logged Out Regex:" field="loggedOutRegex" help="Optional Regex that can be used to identify logged-off state" >
+                        <f:textbox/>
+                    </f:entry>
+                </f:optionalBlock>
         </f:entry>
 
-        <f:entry title="Scan Method:" field="scanMethod">
-            <f:entry>
-                <f:radioBlock name="scanMethod" title="Full" value="FULL" checked="true" inline="true">
-                        <f:nested>
-                            <f:entry title="API URL" field="apiUrl" description="Provide the API base url">
-                                <f:textbox/>
-                            </f:entry>
-                            <f:entry title="API Definition" field="apiDefinition" description="Provide the API Definition URI location ">
-                                <f:textbox/>
-                            </f:entry>
-                        </f:nested>
-                </f:radioBlock>
+        <!--<f:optionalBlock name="useLogin" title="Use Login?" checked="false" inline="true">
+            <f:entry title="Login Url:">
+                <f:textbox default="127.0.0.1/authentication/login"/>
             </f:entry>
-            <f:entry>
-                <f:radio name="scanMethod" title="Traditional" value="TRADITIONAL"/>
+            <f:entry title="Login Request Properties:">
+                <f:entry title="JSON Data">
+                    <f:textarea default='{
+                    "name":"name",
+                    "username":"username",
+                    "password":"password"
+                }'/>
+                </f:entry>
+                <f:entry title="Username field">
+                    <f:textbox default='username'/>
+                </f:entry>
+                <f:entry title="Password field">
+                    <f:textbox default='password'/>
+                </f:entry>
             </f:entry>
-            <f:entry>
-                <f:radio name="scanMethod" title="Ajax" value="AJAX"/>
-            </f:entry>
-        </f:entry>
 
-        <f:entry title="Perform Attack:" field="performAttack">
-            <f:checkbox checked="true"></f:checkbox>
-        </f:entry>
+        </f:optionalBlock>-->
     </f:section>
 </j:jelly>
