@@ -10,10 +10,11 @@ import hudson.tasks.Builder;
 import hudson.util.FormValidation;
 import jenkins.model.Jenkins;
 import jenkins.tasks.SimpleBuildStep;
+import lombok.Getter;
+import lombok.Setter;
 import net.sf.json.JSONObject;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
-import org.kohsuke.stapler.export.ExportedBean;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URI;
@@ -24,20 +25,20 @@ import java.util.*;
 public class WsapBuilder extends Builder implements SimpleBuildStep {
 
     //Scanner Properties
-    private String ipAddress;
-    private int port;
-    private String apiKey;
+    @Getter @Setter private String ipAddress;
+    @Getter @Setter private int port;
+    @Getter @Setter private String apiKey;
 
     //Analysis Properties
-    private String targetUrl;
-    private String scanMethod;
-    private String apiUrl;
-    private String apiUrlDefinition;
-    private boolean performAttack;
+    @Getter @Setter private  String targetUrl;
+    @Getter @Setter private String scanMethod;
+    @Getter @Setter private String apiUrl;
+    @Getter @Setter private String apiUrlDefinition;
+    @Getter @Setter private boolean performAttack;
 
     //Login Properties
-    private LoginProperties useLogin;
-    private List<UserEntry> entries;
+    @Getter @Setter private LoginProperties useLogin;
+    @Getter @Setter private List<UserEntry> entries;
 
     @DataBoundConstructor
     @SuppressWarnings("unused")
@@ -54,96 +55,7 @@ public class WsapBuilder extends Builder implements SimpleBuildStep {
         if (useLogin!=null){
             this.useLogin = useLogin;
         }
-        this.entries = this.entries = entries != null ? new ArrayList(entries) : Collections.emptyList();
-    }
-
-    public List<UserEntry> getEntries(){
-        return entries;
-    }
-
-    public static final class UserEntry extends Entry {
-        private final String text;
-        @DataBoundConstructor public UserEntry(String text) { this.text = text; }
-        public String getText() { return text; }
-
-        @Extension
-        public static class DescriptorImpl extends Descriptor<Entry> {
-            @Override public String getDisplayName() { return "User Credentials"; }
-        }
-    }
-    public static abstract class Entry extends AbstractDescribableImpl<Entry> {}
-
-
-    public String getTargetUrl() {
-        return targetUrl;
-    }
-
-    public void setTargetUrl(String targetUrl) {
-        this.targetUrl = targetUrl;
-    }
-
-    public String getIpAddress() {
-        return ipAddress;
-    }
-
-    public void setIpAddress(String ipAddress) {
-        this.ipAddress = ipAddress;
-    }
-
-    public int getPort() {
-        return port;
-    }
-
-    public void setPort(int port) {
-        this.port = port;
-    }
-
-    public String getApiKey() {
-        return apiKey;
-    }
-
-    public void setApiKey(String key) {
-        this.apiKey = apiKey;
-    }
-
-    public String getScanMethod() {
-        return scanMethod;
-    }
-
-    public void setScanMethod(String scanMethod) {
-        this.scanMethod = scanMethod;
-    }
-
-    public boolean isPerformAttack() {
-        return performAttack;
-    }
-
-    public void setPerformAttack(boolean performAttack) {
-        this.performAttack = performAttack;
-    }
-
-    public LoginProperties isUseLogin() {
-        return useLogin;
-    }
-
-    public void setUseLogin(LoginProperties useLogin) {
-        this.useLogin = useLogin;
-    }
-
-    public String getApiUrl() {
-        return apiUrl;
-    }
-
-    public void setApiUrl(String apiUrl) {
-        this.apiUrl = apiUrl;
-    }
-
-    public String getApiUrlDefinition() {
-        return apiUrlDefinition;
-    }
-
-    public void setApiUrlDefinition(String apiUrlDefinition) {
-        this.apiUrlDefinition = apiUrlDefinition;
+        this.entries = entries != null ? new ArrayList(entries) : Collections.emptyList();
     }
 
     public String generateCMD(){
@@ -223,7 +135,6 @@ public class WsapBuilder extends Builder implements SimpleBuildStep {
         public String getDisplayName() {
             return "Web Security Application Project (WSAP)";
         }
-
 
         /**
          * Return a describer containing all Child Descriptors
