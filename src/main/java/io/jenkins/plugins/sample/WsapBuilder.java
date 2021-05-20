@@ -1,28 +1,26 @@
 package io.jenkins.plugins.sample;
 
+import com.google.common.collect.ImmutableList;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.Launcher;
-import hudson.model.AbstractBuild;
-import hudson.model.AbstractProject;
-import hudson.model.BuildListener;
+import hudson.model.*;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
 import hudson.util.FormValidation;
+import jenkins.model.Jenkins;
 import jenkins.tasks.SimpleBuildStep;
 import net.sf.json.JSONObject;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.export.ExportedBean;
-
-
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.util.*;
 
-@ExportedBean
 public class WsapBuilder extends Builder implements SimpleBuildStep {
 
     //Scanner Properties
@@ -38,19 +36,13 @@ public class WsapBuilder extends Builder implements SimpleBuildStep {
     private boolean performAttack;
 
     //Login Properties
-    private boolean useLogin;
-    private String loginURL;
-    private String requestJson;
-    private String usernameField;
-    private String passwordField;
-    private String loggedInRegex;
-    private String loggedOutRegex;
+    private LoginProperties useLogin;
+    private List<UserEntry> entries;
 
     @DataBoundConstructor
     @SuppressWarnings("unused")
-    public WsapBuilder(String ipAddress, int port, String apiKey, String targetUrl, String scanMethod, String apiUrl, String apiUrlDefinition, boolean performAttack,
-                       boolean useLogin, String loginUrl, String requestJson, String usernameField, String passwordField,
-                       String loggedInRegex, String loggedOutRegex){
+    public WsapBuilder(String ipAddress, int port, String apiKey, String targetUrl, String scanMethod, String apiUrl,
+                       String apiUrlDefinition, boolean performAttack, LoginProperties useLogin, Collection<UserEntry> entries){
         this.ipAddress = ipAddress;
         this.port = port;
         this.apiKey = "vcvicclkl5kegm34aba9dhroem";
@@ -59,54 +51,28 @@ public class WsapBuilder extends Builder implements SimpleBuildStep {
         this.apiUrl = apiUrl;
         this.apiUrlDefinition = apiUrlDefinition;
         this.performAttack = performAttack;
-        this.useLogin = useLogin;
-        this.loginURL = loginUrl;
-        this.requestJson = requestJson;
-        this.usernameField = usernameField;
-        this.passwordField = passwordField;
-        this.loggedInRegex = loggedInRegex;
-        this.loggedOutRegex = loggedOutRegex;
+        if (useLogin!=null){
+            this.useLogin = useLogin;
+        }
+        this.entries = this.entries = entries != null ? new ArrayList(entries) : Collections.emptyList();
     }
 
-    public String getLoggedInRegex() {
-        return loggedInRegex;
+    public List<UserEntry> getEntries(){
+        return entries;
     }
 
-    public void setLoggedInRegex(String loggedInRegex) {
-        this.loggedInRegex = loggedInRegex;
-    }
+    public static final class UserEntry extends Entry {
+        private final String text;
+        @DataBoundConstructor public UserEntry(String text) { this.text = text; }
+        public String getText() { return text; }
 
-    public String getLoggedOutRegex() {
-        return loggedOutRegex;
+        @Extension
+        public static class DescriptorImpl extends Descriptor<Entry> {
+            @Override public String getDisplayName() { return "User Credentials"; }
+        }
     }
+    public static abstract class Entry extends AbstractDescribableImpl<Entry> {}
 
-    public void setLoggedOutRegex(String loggedOutRegex) {
-        this.loggedOutRegex = loggedOutRegex;
-    }
-
-    public String getUsernameField() {
-        return usernameField;
-    }
-
-    public void setUsernameField(String usernameField) {
-        this.usernameField = usernameField;
-    }
-
-    public String getPasswordField() {
-        return passwordField;
-    }
-
-    public void setPasswordField(String passwordField) {
-        this.passwordField = passwordField;
-    }
-
-    public String getLoginURL() {
-        return loginURL;
-    }
-
-    public void setLoginURL(String loginURL) {
-        this.loginURL = loginURL;
-    }
 
     public String getTargetUrl() {
         return targetUrl;
@@ -156,11 +122,11 @@ public class WsapBuilder extends Builder implements SimpleBuildStep {
         this.performAttack = performAttack;
     }
 
-    public boolean isUseLogin() {
+    public LoginProperties isUseLogin() {
         return useLogin;
     }
 
-    public void setUseLogin(boolean useLogin) {
+    public void setUseLogin(LoginProperties useLogin) {
         this.useLogin = useLogin;
     }
 
@@ -180,14 +146,6 @@ public class WsapBuilder extends Builder implements SimpleBuildStep {
         this.apiUrlDefinition = apiUrlDefinition;
     }
 
-    public String getRequestJson() {
-        return requestJson;
-    }
-
-    public void setRequestJson(String requestJson) {
-        this.requestJson = requestJson;
-    }
-
     public String generateCMD(){
         String cmd = String.format("python3 --ipaddress %s --port %s -key %s ",ipAddress,port,apiKey);
 
@@ -203,16 +161,8 @@ public class WsapBuilder extends Builder implements SimpleBuildStep {
                 break;
         }
         cmd += (performAttack) ? "--performAttack " : "";
-        if (useLogin){
-            cmd +=  String.format(
-                    "--loginUrl %s --requestLoginJSON %s --usernameField %s --passwordField %s",
-                    loginURL,
-                    requestJson.replaceAll("\\s+",""),
-                    usernameField,
-                    passwordField
-            );
-            cmd += (loggedInRegex!=null) ? "--loggedInRegex "+loggedInRegex : "";
-            cmd += (loggedOutRegex!=null) ? "--loggedOutRegex "+loggedOutRegex : "";
+        if (useLogin!=null){
+            cmd += useLogin.generateCMD();
         }
         return cmd;
     }
@@ -228,6 +178,7 @@ public class WsapBuilder extends Builder implements SimpleBuildStep {
         //Thread.sleep(time);
         return true;
     }
+
 
     @Extension
     public static final class DescriptorImpl extends BuildStepDescriptor<Builder> {
@@ -273,6 +224,17 @@ public class WsapBuilder extends Builder implements SimpleBuildStep {
             return "Web Security Application Project (WSAP)";
         }
 
+
+        /**
+         * Return a describer containing all Child Descriptors
+         * Used in order to add multiple user credentials
+         * @return
+         */
+        public List<Descriptor> getEntryDescriptors() {
+            Jenkins jenkins=Jenkins.getInstance();
+            return ImmutableList.of(jenkins.getDescriptor(UserEntry.class));
+        }
+
         public FormValidation doCheckIpAddress(@QueryParameter String ipAddress){
             try {
                 new URL(ipAddress).toURI();
@@ -302,7 +264,6 @@ public class WsapBuilder extends Builder implements SimpleBuildStep {
                 return FormValidation.error(e.getMessage());
             }
         }
-
 
         public FormValidation doCheckScanMethod(@QueryParameter String value){
             return FormValidation.error(value);

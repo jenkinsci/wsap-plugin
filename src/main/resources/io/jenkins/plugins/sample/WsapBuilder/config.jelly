@@ -23,10 +23,10 @@
                     <f:entry>
                         <f:radioBlock name="scanMethod" title="Full" value="FULL" checked="true" inline="true">
                                 <f:nested>
-                                    <f:entry title="API URL" field="apiUrl" description="Provide the API base url">
+                                    <f:entry title="API URL" field="apiUrl" description="Provide the BASE URL API">
                                         <f:textbox default="${descriptor.API_URL}"/>
                                     </f:entry>
-                                    <f:entry title="API Definition" field="apiDefinition" description="Provide the API Definition URI location ">
+                                    <f:entry title="API Definition" field="apiDefinition" description="Provide a valid URI describing the location of the API Definition">
                                         <f:textbox default="${descriptor.API_DEFINITION}"/>
                                     </f:entry>
                                 </f:nested>
@@ -44,7 +44,7 @@
                     <f:checkbox checked="true"></f:checkbox>
                 </f:entry>
 
-                <f:optionalBlock name="useLogin" title="Use Login?" checked="false" inline="true">
+                <f:optionalBlock name="useLogin" title="Use Login?" checked="${instance.useLogin}">
                     <f:entry title="Login Url:" field="loginUrl">
                         <f:textbox default="${descriptor.API_URL}/authentication/login"/>
                     </f:entry>
@@ -64,6 +64,11 @@
                     <f:entry title="Logged Out Regex:" field="loggedOutRegex" help="Optional Regex that can be used to identify logged-off state" >
                         <f:textbox/>
                     </f:entry>
+
+                    <f:hetero-list name="buildstep" hasHeader="true"
+                           descriptors="${descriptor.getEntryDescriptors()}"
+                           items="${instance.entries}"
+                           addCaption="${%Add User}"/>
                 </f:optionalBlock>
         </f:entry>
 
