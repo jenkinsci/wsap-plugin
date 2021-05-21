@@ -1,95 +1,60 @@
 package io.jenkins.plugins.sample;
 
-import hudson.Extension;
-import hudson.model.AbstractDescribableImpl;
-import hudson.model.Descriptor;
+import lombok.Getter;
+import lombok.Setter;
 import org.kohsuke.stapler.DataBoundConstructor;
-
+import org.json.JSONObject;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public class LoginProperties
-{
+public class LoginProperties implements ConsoleSupport{
+    @Getter @Setter
     private String loginURL;
+    @Getter @Setter
     private String requestJson;
+    @Getter @Setter
     private String usernameField;
+    @Getter @Setter
     private String passwordField;
+    @Getter @Setter
     private String loggedInRegex;
+    @Getter @Setter
     private String loggedOutRegex;
-
-
+    @Getter @Setter
+    private List<Entry> entries;
 
     @DataBoundConstructor
     public LoginProperties(String loginUrl, String requestJson, String usernameField, String passwordField,
-                           String loggedInRegex, String loggedOutRegex){
+                           String loggedInRegex, String loggedOutRegex, List<Entry> entries){
         this.loginURL = loginUrl;
         this.requestJson = requestJson;
         this.usernameField = usernameField;
         this.passwordField = passwordField;
         this.loggedInRegex = loggedInRegex;
         this.loggedOutRegex = loggedOutRegex;
-
+        this.entries = entries != null ? new ArrayList<>(entries) : Collections.emptyList();
     }
 
-    public String getLoggedInRegex() {
-        return loggedInRegex;
-    }
-
-    public void setLoggedInRegex(String loggedInRegex) {
-        this.loggedInRegex = loggedInRegex;
-    }
-
-    public String getLoggedOutRegex() {
-        return loggedOutRegex;
-    }
-
-    public void setLoggedOutRegex(String loggedOutRegex) {
-        this.loggedOutRegex = loggedOutRegex;
-    }
-
-    public String getUsernameField() {
-        return usernameField;
-    }
-
-    public void setUsernameField(String usernameField) {
-        this.usernameField = usernameField;
-    }
-
-    public String getPasswordField() {
-        return passwordField;
-    }
-
-    public void setPasswordField(String passwordField) {
-        this.passwordField = passwordField;
-    }
-
-    public String getLoginURL() {
-        return loginURL;
-    }
-
-    public void setLoginURL(String loginURL) {
-        this.loginURL = loginURL;
-    }
-
-    public String getRequestJson() {
-        return requestJson;
-    }
-
-    public void setRequestJson(String requestJson) {
-        this.requestJson = requestJson;
-    }
-
+    @Override
     public String generateCMD() {
-        String cmd = "";
-        cmd +=  String.format(
-                "--loginUrl %s --requestLoginJSON %s --usernameField %s --passwordField %s ",
+        String cmd = String.format(
+                "--login.url %s --login.request %s --login.userField %s --login.passField %s ",
                 this.loginURL,
-                this.requestJson.replaceAll("\\s+",""),
+                JSONObject.quote(this.requestJson.replaceAll("\\s+","")),
                 this.usernameField,
                 this.passwordField
         );
-        cmd += (this.loggedInRegex!=null) ? "--loggedInRegex "+this.loggedInRegex : "";
-        cmd += (this.loggedOutRegex!=null) ? "--loggedOutRegex "+this.loggedOutRegex : "";
+        if (loggedInRegex !=null && !loggedInRegex.isEmpty()){
+            cmd+= String.format("--login.loggedInRegex %s ",loggedInRegex);
+        }
+        if (loggedOutRegex !=null && !loggedOutRegex.isEmpty()){
+            cmd+= String.format("--login.loggedOutRegex %s ",loggedOutRegex);
+        }
+
+        for (Entry entry:entries) {
+            cmd+=entry.generateCMD();
+        }
         return cmd;
     }
 }

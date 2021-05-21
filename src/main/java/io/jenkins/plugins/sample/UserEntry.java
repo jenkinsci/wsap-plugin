@@ -6,7 +6,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.kohsuke.stapler.DataBoundConstructor;
 
-public class UserEntry extends Entry {
+public class UserEntry extends Entry implements ConsoleSupport {
     @Getter @Setter
     private String username;
     @Getter @Setter
@@ -17,6 +17,12 @@ public class UserEntry extends Entry {
         this.username = username;
         this.password = password;
     }
+
+    @Override
+    public String generateCMD() {
+        return String.format("--login.user %s %s ", username, password);
+    }
+
 
     @Extension
     public static class DescriptorImpl extends Descriptor<Entry> {

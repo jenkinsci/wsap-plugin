@@ -65,10 +65,13 @@
                         <f:textbox/>
                     </f:entry>
 
-                    <f:hetero-list name="buildstep" hasHeader="true"
-                           descriptors="${descriptor.getEntryDescriptors()}"
-                           items="${instance.entries}"
-                           addCaption="${%Add User}"/>
+                    <f:entry field="entries">
+                        <f:hetero-list name="entries"
+                                       hasHeader="true"
+                                       descriptors="${descriptor.getEntryDescriptors()}"
+                                       items="${instance.entries}"
+                                       addCaption="${%Add User}"/>
+                    </f:entry>
                 </f:optionalBlock>
         </f:entry>
 
