@@ -20,7 +20,7 @@ public class UserEntry extends Entry implements ConsoleSupport {
 
     @Override
     public String generateCMD() {
-        return String.format("--login.user %s %s ", username, password);
+        return String.format("--login.user \"%s\" \"%s\" ", username, password);
     }
 
 

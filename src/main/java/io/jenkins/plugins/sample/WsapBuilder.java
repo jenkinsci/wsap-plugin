@@ -8,7 +8,6 @@ import hudson.Launcher;
 import hudson.model.*;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
-import hudson.util.FormApply;
 import hudson.util.FormValidation;
 import jenkins.model.Jenkins;
 import jenkins.tasks.SimpleBuildStep;
@@ -19,7 +18,6 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 
-import javax.servlet.ServletException;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URI;
@@ -36,9 +34,7 @@ public class WsapBuilder extends Builder implements SimpleBuildStep,ConsoleSuppo
 
     //Analysis Properties
     @Getter @Setter private  String targetUrl;
-    @Getter @Setter private String scanMethod;
-    @Getter @Setter private String apiUrl;
-    @Getter @Setter private String apiUrlDefinition;
+    @Getter @Setter private ScanProperties scanMethod;
     @Getter @Setter private boolean performAttack;
 
     //Login Properties
@@ -46,15 +42,12 @@ public class WsapBuilder extends Builder implements SimpleBuildStep,ConsoleSuppo
 
     @DataBoundConstructor
     @SuppressWarnings("unused")
-    public WsapBuilder(String ipAddress, int port, String apiKey, String targetUrl, String scanMethod, String apiUrl,
-                       String apiUrlDefinition, boolean performAttack, LoginProperties useLogin){
+    public WsapBuilder(String ipAddress, int port, String apiKey, String targetUrl, ScanProperties scanMethod, boolean performAttack, LoginProperties useLogin){
         this.ipAddress = ipAddress;
         this.port = port;
         this.apiKey = "vcvicclkl5kegm34aba9dhroem";
         this.targetUrl = targetUrl;
         this.scanMethod = scanMethod;
-        this.apiUrl = apiUrl;
-        this.apiUrlDefinition = apiUrlDefinition;
         this.performAttack = performAttack;
         if (useLogin!=null){
             this.useLogin = useLogin;
@@ -63,19 +56,11 @@ public class WsapBuilder extends Builder implements SimpleBuildStep,ConsoleSuppo
 
     @Override
     public String generateCMD(){
-        String cmd = String.format("python3 --scanner.ip %s --scanner.port %s --scanner.key %s ",ipAddress,port,apiKey);
+        String cmd = String.format("python3 main.py --scanner.ip %s --scanner.port %s --scanner.key %s ",ipAddress,port,apiKey);
 
-        switch (scanMethod.toUpperCase()){
-            case "FULL":
-                cmd += "--scan FULL ";
-                break;
-            case "TRADITIONAL":
-                cmd += "--scan TRADITIONAL ";
-                break;
-            case "AJAX":
-                cmd += "--scan AJAX ";
-                break;
-        }
+        cmd += String.format("--targetUrl %s ",targetUrl);
+        cmd+= scanMethod.generateCMD();
+
         cmd += (performAttack) ? "--performAttack ": "";
         if (useLogin!=null){
             cmd += useLogin.generateCMD();
@@ -94,7 +79,6 @@ public class WsapBuilder extends Builder implements SimpleBuildStep,ConsoleSuppo
         //Thread.sleep(time);
         return true;
     }
-
 
     @Extension
     public static final class DescriptorImpl extends BuildStepDescriptor<Builder> {

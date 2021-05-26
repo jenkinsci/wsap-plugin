@@ -21,7 +21,7 @@
 
                 <f:entry title="Scan Method:" field="scanMethod">
                     <f:entry>
-                        <f:radioBlock name="scanMethod" title="Full" value="FULL" checked="true" inline="true">
+                        <f:radioBlock name="scanMethod" title="Full" value="FULL" checked="true">
                                 <f:nested>
                                     <f:entry title="API URL" field="apiUrl" description="Provide the BASE URL API">
                                         <f:textbox default="${descriptor.API_URL}"/>
