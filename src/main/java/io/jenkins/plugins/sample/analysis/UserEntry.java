@@ -1,7 +1,9 @@
-package io.jenkins.plugins.sample;
+package io.jenkins.plugins.sample.analysis;
 
 import hudson.Extension;
 import hudson.model.Descriptor;
+import io.jenkins.plugins.sample.ConsoleSupport;
+import io.jenkins.plugins.sample.Entry;
 import lombok.Getter;
 import lombok.Setter;
 import org.kohsuke.stapler.DataBoundConstructor;

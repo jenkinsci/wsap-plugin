@@ -1,100 +1,97 @@
 <?jelly escape-by-default='true'?>
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
-    <f:section title="Static Analysis">
 
+    <f:entry title="WSAP Location:" field="wsapLocation">
+        <f:textbox default="${descriptor.WSAP_LOCATION}" value="${it.wsapLocation}"/>
+    </f:entry>
+
+    <f:entry title="Target Url:" field="targetUrl">
+        <f:textbox default="${descriptor.TARGET_URL}" value="${it.targetUrl}"/>
+    </f:entry>
+
+    <f:section title="Scanner Properties" >
+        <f:entry title="SSH username" field="userSSH">
+            <f:textbox default="${descriptor.SSH_USER}" value="${it.userSSH}"/>
+        </f:entry>
+        <f:entry title="SSH IP" field="ipAddress">
+            <f:textbox default="${descriptor.SCANNER_IP}" value="${it.ipAddress}"/>
+        </f:entry>
+
+        <f:entry title="Port Scanner" field="port">
+            <f:textbox default="${descriptor.SCANNER_PORT}" value="${it.port}"/>
+        </f:entry>
     </f:section>
-    <f:section title="Dynamic Analysis">
-        <f:entry title="Scanner Properties:">
-                <f:entry title="IP Address" field="ipAddress">
-                    <f:textbox default="${descriptor.SCANNER_IP}"/>
-                </f:entry>
 
-                <f:entry title="Port" field="port">
-                    <f:textbox default="${descriptor.SCANNER_PORT}"/>
-                </f:entry>
+    <f:section title="Static Analysis" name="sastAnalysis">
+        <f:entry title="C">
+            <f:textbox value="${it.sastAnalysis.target}"/>
+        </f:entry>
+    </f:section>
+
+    <f:section title="Dynamic Analysis" name="dastAnalysis">
+        <f:entry title="Scan Method:" field="scanMethod">
+            <f:entry>
+                <f:radioBlock name="scanMethod" title="Full" value="FULL" checked="true">
+                        <f:nested>
+                            <f:entry title="API URL" field="apiUrl" description="Provide the BASE URL API">
+                                <f:textbox default="${descriptor.API_URL}"/>
+                            </f:entry>
+                            <f:entry title="API Definition" field="apiDefinition" description="Provide a valid URI describing the location of the API Definition">
+                                <f:textbox default="${descriptor.API_DEFINITION}"/>
+                            </f:entry>
+                        </f:nested>
+                </f:radioBlock>
+            </f:entry>
+            <f:entry field="includeUrls">
+                <f:hetero-list name="includeUrls"
+                               hasHeader="true"
+                               descriptors="${descriptor.getIncludeDescriptors()}"
+                               items="${instance.includeUrls}"
+                               addCaption="${%Include Urls}"/>
+            </f:entry>
+            <f:entry field="excludeUrls">
+                <f:hetero-list name="excludeUrls"
+                               hasHeader="true"
+                               descriptors="${descriptor.getExcludeDescriptors()}"
+                               items="${instance.excludeUrls}"
+                               addCaption="${%Exclude Urls}"/>
+            </f:entry>
+            <f:entry>
+                <f:radio name="scanMethod" title="Traditional" value="TRADITIONAL"/>
+            </f:entry>
+            <f:entry>
+                <f:radio name="scanMethod" title="Ajax" value="AJAX"/>
+            </f:entry>
         </f:entry>
 
-        <f:entry title="Analysis Properties:">
-                <f:entry title="Target Url" field="targetUrl">
-                    <f:textbox default="${descriptor.TARGET}"/>
-                </f:entry>
-
-                <f:entry title="Scan Method:" field="scanMethod">
-                    <f:entry>
-                        <f:radioBlock name="scanMethod" title="Full" value="FULL" checked="true">
-                                <f:nested>
-                                    <f:entry title="API URL" field="apiUrl" description="Provide the BASE URL API">
-                                        <f:textbox default="${descriptor.API_URL}"/>
-                                    </f:entry>
-                                    <f:entry title="API Definition" field="apiDefinition" description="Provide a valid URI describing the location of the API Definition">
-                                        <f:textbox default="${descriptor.API_DEFINITION}"/>
-                                    </f:entry>
-                                </f:nested>
-                        </f:radioBlock>
-                    </f:entry>
-                    <f:entry>
-                        <f:radio name="scanMethod" title="Traditional" value="TRADITIONAL"/>
-                    </f:entry>
-                    <f:entry>
-                        <f:radio name="scanMethod" title="Ajax" value="AJAX"/>
-                    </f:entry>
-                </f:entry>
-
-                <f:entry title="Perform Attack:" field="performAttack">
-                    <f:checkbox checked="true"></f:checkbox>
-                </f:entry>
-
-                <f:optionalBlock name="useLogin" title="Use Login?" checked="${instance.useLogin}">
-                    <f:entry title="Login Url:" field="loginUrl">
-                        <f:textbox default="${descriptor.API_URL}/authentication/login"/>
-                    </f:entry>
-                    <f:entry title="JSON Data:" field="requestJson" help="Should describe the JSON request structure required for a successful login">
-                        <f:textarea field="requestJson" value="${descriptor.JSON_LOGIN_REQUEST}" codemirror-mode="groovy"/>
-                    </f:entry>
-                    <f:entry title="Username field:" field="usernameField" help="Identifies the username field provided previously">
-                        <f:textbox default='${descriptor.JSON_LOGIN_USERNAME_FIELD}'/>
-                    </f:entry>
-                    <f:entry title="Password field:" field="passwordField" help="Identifies the password field provided previously">
-                        <f:textbox default='${descriptor.JSON_LOGIN_PASSWORD_FIELD}'/>
-                    </f:entry>
-
-                    <f:entry title="Logged In Regex:" field="loggedInRegex" help="Optional Regex that can be used to identify a successful logged-in state" >
-                        <f:textbox default="${descriptor.LOGGED_IN_REGGEX}"/>
-                    </f:entry>
-                    <f:entry title="Logged Out Regex:" field="loggedOutRegex" help="Optional Regex that can be used to identify logged-off state" >
-                        <f:textbox/>
-                    </f:entry>
-
-                    <f:entry field="entries">
-                        <f:hetero-list name="entries"
-                                       hasHeader="true"
-                                       descriptors="${descriptor.getEntryDescriptors()}"
-                                       items="${instance.entries}"
-                                       addCaption="${%Add User}"/>
-                    </f:entry>
-                </f:optionalBlock>
-        </f:entry>
-
-        <!--<f:optionalBlock name="useLogin" title="Use Login?" checked="false" inline="true">
-            <f:entry title="Login Url:">
-                <f:textbox default="127.0.0.1/authentication/login"/>
+        <f:optionalBlock name="useLogin" title="Use Login?" checked="${instance.useLogin}">
+            <f:entry title="Login Url:" field="loginUrl">
+                <f:textbox default="${descriptor.LOGIN_URL}"/>
             </f:entry>
-            <f:entry title="Login Request Properties:">
-                <f:entry title="JSON Data">
-                    <f:textarea default='{
-                    "name":"name",
-                    "username":"username",
-                    "password":"password"
-                }'/>
-                </f:entry>
-                <f:entry title="Username field">
-                    <f:textbox default='username'/>
-                </f:entry>
-                <f:entry title="Password field">
-                    <f:textbox default='password'/>
-                </f:entry>
+            <f:entry title="JSON Data:" field="requestJson" help="Should describe the JSON request structure required for a successful login">
+                <f:textarea field="requestJson" value="${descriptor.JSON_LOGIN_REQUEST}" codemirror-mode="groovy"/>
+            </f:entry>
+            <f:entry title="Username field:" field="usernameField" help="Identifies the username field provided previously">
+                <f:textbox default='${descriptor.JSON_LOGIN_USERNAME_FIELD}'/>
+            </f:entry>
+            <f:entry title="Password field:" field="passwordField" help="Identifies the password field provided previously">
+                <f:textbox default='${descriptor.JSON_LOGIN_PASSWORD_FIELD}'/>
             </f:entry>
 
-        </f:optionalBlock>-->
+            <f:entry title="Logged In Regex:" field="loggedInRegex" help="Optional Regex that can be used to identify a successful logged-in state" >
+                <f:textbox default="${descriptor.LOGGED_IN_REGGEX}"/>
+            </f:entry>
+            <f:entry title="Logged Out Regex:" field="loggedOutRegex" help="Optional Regex that can be used to identify logged-off state" >
+                <f:textbox/>
+            </f:entry>
+
+            <f:entry field="users">
+                <f:hetero-list name="users"
+                               hasHeader="true"
+                               descriptors="${descriptor.getUsersDescriptors()}"
+                               items="${instance.users}"
+                               addCaption="${%Add User}"/>
+            </f:entry>
+        </f:optionalBlock>
     </f:section>
 </j:jelly>

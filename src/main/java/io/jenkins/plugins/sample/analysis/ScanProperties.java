@@ -1,15 +1,11 @@
-package io.jenkins.plugins.sample;
+package io.jenkins.plugins.sample.analysis;
 
+import io.jenkins.plugins.sample.ConsoleSupport;
 import lombok.Getter;
 import lombok.Setter;
-import org.json.JSONObject;
 import org.kohsuke.stapler.DataBoundConstructor;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
-public class ScanProperties implements ConsoleSupport{
+public class ScanProperties implements ConsoleSupport {
     @Getter @Setter
     private String value;
     @Getter @Setter
@@ -30,14 +26,14 @@ public class ScanProperties implements ConsoleSupport{
         String cmd ="";
         switch (value.toUpperCase()){
             case "FULL":  case "APIONLY":
-                cmd += "--scan.type "+value.toUpperCase()+" ";
+                cmd += "--scan.mode "+value.toUpperCase()+" ";
                 cmd += String.format("--scan.apiUrl %s --scan.apiDefinition %s ", apiUrl, apiDefinition);
                 break;
             case "TRADITIONAL":
-                cmd += "--scan.type TRADITIONAL ";
+                cmd += "--scan.mode TRADITIONAL ";
                 break;
             case "AJAX":
-                cmd += "--scan.type AJAX ";
+                cmd += "--scan.mode AJAX ";
                 break;
         }
 

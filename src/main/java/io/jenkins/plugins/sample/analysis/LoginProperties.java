@@ -1,5 +1,7 @@
-package io.jenkins.plugins.sample;
+package io.jenkins.plugins.sample.analysis;
 
+import io.jenkins.plugins.sample.ConsoleSupport;
+import io.jenkins.plugins.sample.Entry;
 import lombok.Getter;
 import lombok.Setter;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -8,7 +10,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public class LoginProperties implements ConsoleSupport{
+public class LoginProperties implements ConsoleSupport {
     @Getter @Setter
     private String loginURL;
     @Getter @Setter
@@ -22,18 +24,18 @@ public class LoginProperties implements ConsoleSupport{
     @Getter @Setter
     private String loggedOutRegex;
     @Getter @Setter
-    private List<Entry> entries;
+    private List<Entry> users;
 
     @DataBoundConstructor
     public LoginProperties(String loginUrl, String requestJson, String usernameField, String passwordField,
-                           String loggedInRegex, String loggedOutRegex, List<Entry> entries){
+                           String loggedInRegex, String loggedOutRegex, List<Entry> users){
         this.loginURL = loginUrl;
         this.requestJson = requestJson;
         this.usernameField = usernameField;
         this.passwordField = passwordField;
         this.loggedInRegex = loggedInRegex;
         this.loggedOutRegex = loggedOutRegex;
-        this.entries = entries != null ? new ArrayList<>(entries) : Collections.emptyList();
+        this.users = users != null ? new ArrayList<>(users) : Collections.emptyList();
     }
 
     @Override
@@ -45,14 +47,14 @@ public class LoginProperties implements ConsoleSupport{
                 this.usernameField,
                 this.passwordField
         );
-        if (loggedInRegex !=null && !loggedInRegex.isEmpty()){
+        /*if (loggedInRegex !=null && !loggedInRegex.isEmpty()){
             cmd+= String.format("--login.loggedInRegex %s ",loggedInRegex);
         }
         if (loggedOutRegex !=null && !loggedOutRegex.isEmpty()){
             cmd+= String.format("--login.loggedOutRegex %s ",loggedOutRegex);
-        }
+        }*/
 
-        for (Entry entry:entries) {
+        for (Entry entry: users) {
             cmd+=entry.generateCMD();
         }
         return cmd;
