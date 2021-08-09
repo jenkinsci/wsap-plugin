@@ -37,7 +37,7 @@ public class WsapBuilder extends Builder implements SimpleBuildStep,ConsoleSuppo
     @Getter @Setter private int port;
 
     //Analysis Properties
-    public SASTAnalysis sastAnalysis;
+    @Getter @Setter public SASTAnalysis sastAnalysis;
     @Getter @Setter public DASTAnalysis dastAnalysis;
 
     @DataBoundConstructor
@@ -119,17 +119,6 @@ public class WsapBuilder extends Builder implements SimpleBuildStep,ConsoleSuppo
         return true;
     }
 
-    public SASTAnalysis getSastAnalysis() {
-        java.util.logging.Logger logger =  java.util.logging.Logger.getLogger(this.getClass().getName());
-        logger.info("getSastAnalysis() IS CALLED");
-        return sastAnalysis;
-    }
-
-    public void setSastAnalysis(SASTAnalysis sastAnalysis) {
-        this.sastAnalysis = sastAnalysis;
-    }
-
-
     @Extension
     public static final class DescriptorImpl extends BuildStepDescriptor<Builder> {
         public String WSAP_LOCATION;
@@ -142,8 +131,6 @@ public class WsapBuilder extends Builder implements SimpleBuildStep,ConsoleSuppo
         public String TARGET;
 
         //DAST
-        public String API_URL;
-        public String API_DEFINITION;
         public String LOGIN_URL;
         public String JSON_LOGIN_REQUEST;
         public String JSON_LOGIN_USERNAME_FIELD;
@@ -152,13 +139,6 @@ public class WsapBuilder extends Builder implements SimpleBuildStep,ConsoleSuppo
 
         public DescriptorImpl() {
             load();
-        }
-
-        @Override
-        public boolean configure(StaplerRequest req, JSONObject json) throws FormException {
-            req.bindJSON(this, json);
-            req.bindJSON(SASTAnalysis.class, json.getJSONObject("sastAnalysis"));
-            return super.configure(req, json);
         }
 
         @Override
@@ -171,14 +151,11 @@ public class WsapBuilder extends Builder implements SimpleBuildStep,ConsoleSuppo
 
             TARGET = "/home/jenkins/vulnado";
 
-            API_URL = "http://target_url.com/api";
-            API_DEFINITION = "file:///home/marquez/Desktop/openapi.json";
             LOGIN_URL = "http://target_url.com/authentication/login";
             JSON_LOGIN_REQUEST = generateJSONRequest();
             JSON_LOGIN_USERNAME_FIELD = "username";
             JSON_LOGIN_PASSWORD_FIELD = "password";
             LOGGED_IN_REGGEX = "r'\\Q<a href='logout.jsp'>Logout</a>\\E";
-
             super.load();
         }
 
@@ -210,16 +187,6 @@ public class WsapBuilder extends Builder implements SimpleBuildStep,ConsoleSuppo
         public List<Descriptor> getUsersDescriptors() {
             Jenkins jenkins=Jenkins.getInstanceOrNull();
             return ImmutableList.of(jenkins.getDescriptor(UserEntry.class));
-        }
-
-        public List<Descriptor> getIncludeDescriptors() {
-            Jenkins jenkins=Jenkins.getInstanceOrNull();
-            return ImmutableList.of(jenkins.getDescriptor(IncludeEntry.class));
-        }
-
-        public List<Descriptor> getExcludeDescriptors() {
-            Jenkins jenkins=Jenkins.getInstanceOrNull();
-            return ImmutableList.of(jenkins.getDescriptor(ExcludeEntry.class));
         }
 
         public FormValidation doCheckPort(@QueryParameter String port){

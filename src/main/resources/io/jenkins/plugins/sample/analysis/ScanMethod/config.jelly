@@ -1,0 +1,17 @@
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+    <f:entry title="Scan Method:">
+        <f:radioBlock name="scan" title="Full" value="FULL" checked="${instance.isScan('FULL')}" inline="true">
+                <f:nested>
+                    <f:entry title="API URL" field="apiUrl" description="Provide the BASE URL API">
+                        <f:textbox default="${descriptor.API_URL}" value="${it.apiUrl}"/>
+                    </f:entry>
+                    <f:entry title="API Definition" field="apiDefinition" description="Provide a valid URI describing the location of the API Definition">
+                        <f:textbox default="${descriptor.API_DEFINITION}" value="${it.apiDefinition}"/>
+                    </f:entry>
+                </f:nested>
+        </f:radioBlock>
+        <f:radioBlock name="scan" title="Traditional" value="TRADITIONAL" checked="${instance.isScan('TRADITIONAL')}" inline="true"/>
+        <f:radioBlock name="scan" title="Ajax" value="AJAX" checked="${instance.isScan('AJAX')}" inline="true"/>
+    </f:entry>
+</j:jelly>

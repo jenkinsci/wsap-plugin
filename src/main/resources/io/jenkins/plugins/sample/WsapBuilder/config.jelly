@@ -22,76 +22,11 @@
         </f:entry>
     </f:section>
 
-    <f:section title="Static Analysis" name="sastAnalysis">
-        <f:entry title="C">
-            <f:textbox value="${it.sastAnalysis.target}"/>
-        </f:entry>
-    </f:section>
+    <f:property field="sastAnalysis">
+        <st:include page="config.jelly"/>
+    </f:property>
 
-    <f:section title="Dynamic Analysis" name="dastAnalysis">
-        <f:entry title="Scan Method:" field="scanMethod">
-            <f:entry>
-                <f:radioBlock name="scanMethod" title="Full" value="FULL" checked="true">
-                        <f:nested>
-                            <f:entry title="API URL" field="apiUrl" description="Provide the BASE URL API">
-                                <f:textbox default="${descriptor.API_URL}"/>
-                            </f:entry>
-                            <f:entry title="API Definition" field="apiDefinition" description="Provide a valid URI describing the location of the API Definition">
-                                <f:textbox default="${descriptor.API_DEFINITION}"/>
-                            </f:entry>
-                        </f:nested>
-                </f:radioBlock>
-            </f:entry>
-            <f:entry field="includeUrls">
-                <f:hetero-list name="includeUrls"
-                               hasHeader="true"
-                               descriptors="${descriptor.getIncludeDescriptors()}"
-                               items="${instance.includeUrls}"
-                               addCaption="${%Include Urls}"/>
-            </f:entry>
-            <f:entry field="excludeUrls">
-                <f:hetero-list name="excludeUrls"
-                               hasHeader="true"
-                               descriptors="${descriptor.getExcludeDescriptors()}"
-                               items="${instance.excludeUrls}"
-                               addCaption="${%Exclude Urls}"/>
-            </f:entry>
-            <f:entry>
-                <f:radio name="scanMethod" title="Traditional" value="TRADITIONAL"/>
-            </f:entry>
-            <f:entry>
-                <f:radio name="scanMethod" title="Ajax" value="AJAX"/>
-            </f:entry>
-        </f:entry>
-
-        <f:optionalBlock name="useLogin" title="Use Login?" checked="${instance.useLogin}">
-            <f:entry title="Login Url:" field="loginUrl">
-                <f:textbox default="${descriptor.LOGIN_URL}"/>
-            </f:entry>
-            <f:entry title="JSON Data:" field="requestJson" help="Should describe the JSON request structure required for a successful login">
-                <f:textarea field="requestJson" value="${descriptor.JSON_LOGIN_REQUEST}" codemirror-mode="groovy"/>
-            </f:entry>
-            <f:entry title="Username field:" field="usernameField" help="Identifies the username field provided previously">
-                <f:textbox default='${descriptor.JSON_LOGIN_USERNAME_FIELD}'/>
-            </f:entry>
-            <f:entry title="Password field:" field="passwordField" help="Identifies the password field provided previously">
-                <f:textbox default='${descriptor.JSON_LOGIN_PASSWORD_FIELD}'/>
-            </f:entry>
-
-            <f:entry title="Logged In Regex:" field="loggedInRegex" help="Optional Regex that can be used to identify a successful logged-in state" >
-                <f:textbox default="${descriptor.LOGGED_IN_REGGEX}"/>
-            </f:entry>
-            <f:entry title="Logged Out Regex:" field="loggedOutRegex" help="Optional Regex that can be used to identify logged-off state" >
-                <f:textbox/>
-            </f:entry>
-
-            <f:entry field="users">
-                <f:hetero-list name="users"
-                               hasHeader="true"
-                               descriptors="${descriptor.getUsersDescriptors()}"
-                               items="${instance.users}"
-                               addCaption="${%Add User}"/>
-            </f:entry>
-        </f:optionalBlock>
-    </f:section>
+    <f:property field="dastAnalysis">
+        <st:include page="config.jelly"/>
+    </f:property>
 </j:jelly>
