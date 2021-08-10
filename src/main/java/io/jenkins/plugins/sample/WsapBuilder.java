@@ -127,16 +127,6 @@ public class WsapBuilder extends Builder implements SimpleBuildStep,ConsoleSuppo
         public String SCANNER_IP;
         public String SCANNER_PORT;
 
-        //SAST
-        public String TARGET;
-
-        //DAST
-        public String LOGIN_URL;
-        public String JSON_LOGIN_REQUEST;
-        public String JSON_LOGIN_USERNAME_FIELD;
-        public String JSON_LOGIN_PASSWORD_FIELD;
-        public String LOGGED_IN_REGGEX;
-
         public DescriptorImpl() {
             load();
         }
@@ -149,23 +139,7 @@ public class WsapBuilder extends Builder implements SimpleBuildStep,ConsoleSuppo
             SCANNER_IP = "127.0.0.1";
             SCANNER_PORT = "8010";
 
-            TARGET = "/home/jenkins/vulnado";
-
-            LOGIN_URL = "http://target_url.com/authentication/login";
-            JSON_LOGIN_REQUEST = generateJSONRequest();
-            JSON_LOGIN_USERNAME_FIELD = "username";
-            JSON_LOGIN_PASSWORD_FIELD = "password";
-            LOGGED_IN_REGGEX = "r'\\Q<a href='logout.jsp'>Logout</a>\\E";
             super.load();
-        }
-
-        private static String generateJSONRequest(){
-            JSONObject jsonObject = new JSONObject();
-            jsonObject.put("name", "name");
-            jsonObject.put("username", "username");
-            jsonObject.put("password","password");
-
-            return jsonObject.toString(4);
         }
 
         @Override
@@ -177,16 +151,6 @@ public class WsapBuilder extends Builder implements SimpleBuildStep,ConsoleSuppo
         @Override
         public String getDisplayName() {
             return "Web Security Application Project (WSAP)";
-        }
-
-        /**
-         * Return a describer containing all Child Descriptors
-         * Used in order to add multiple user credentials
-         * @return
-         */
-        public List<Descriptor> getUsersDescriptors() {
-            Jenkins jenkins=Jenkins.getInstanceOrNull();
-            return ImmutableList.of(jenkins.getDescriptor(UserEntry.class));
         }
 
         public FormValidation doCheckPort(@QueryParameter String port){

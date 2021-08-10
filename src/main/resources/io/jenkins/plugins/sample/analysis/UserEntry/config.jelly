@@ -1,9 +1,9 @@
 <j:jelly xmlns:j="jelly:core" xmlns:f="/lib/form">
     <f:entry title="Username:" field="username">
-        <f:textbox value="username"/>
+        <f:textbox default="${descriptor.username}" value="${it.username}"/>
     </f:entry>
 
     <f:entry title="Password:" field="password" >
-        <f:textbox value="password"/>
+        <f:textbox default="${descriptor.password}" value="${it.password}"/>
     </f:entry>
 </j:jelly>

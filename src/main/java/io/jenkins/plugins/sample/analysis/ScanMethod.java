@@ -64,12 +64,6 @@ public class ScanMethod extends Entry implements ConsoleSupport {
         public String API_URL;
         public String API_DEFINITION;
 
-        @Override
-        public boolean configure(StaplerRequest req, JSONObject json) throws FormException {
-            save();
-            return super.configure( req, json );
-        }
-        
         public DescriptorImpl() {
             load();
         }
@@ -81,5 +75,10 @@ public class ScanMethod extends Entry implements ConsoleSupport {
             super.load();
         }
 
+        @Override
+        public boolean configure(StaplerRequest req, JSONObject json) throws FormException {
+            save();
+            return super.configure( req, json );
+        }
     }
 }

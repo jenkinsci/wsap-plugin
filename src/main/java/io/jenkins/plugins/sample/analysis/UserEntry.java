@@ -25,9 +25,23 @@ public class UserEntry extends Entry implements ConsoleSupport {
         return String.format("--login.user \"%s\" \"%s\" ", username, password);
     }
 
-
     @Extension
     public static class DescriptorImpl extends Descriptor<Entry> {
+        public String DEFAULT_USERNAME;
+        public String DEFAULT_PASSWORD;
+
+        public DescriptorImpl() {
+            load();
+        }
+
+        @Override
+        public synchronized void load() {
+            DEFAULT_USERNAME = "dummyUsername";
+            DEFAULT_PASSWORD = "secret123";
+            super.load();
+        }
+
+
         @Override public String getDisplayName() { return "User Credentials"; }
     }
 }

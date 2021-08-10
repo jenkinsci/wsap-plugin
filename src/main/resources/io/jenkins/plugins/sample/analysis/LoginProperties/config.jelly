@@ -1,0 +1,32 @@
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+    <f:optionalBlock name="useLogin" title="Use Login?" checked="${instance.useLogin}" inline="true">
+        <f:entry title="Login Url:" field="loginUrl">
+            <f:textbox default="${descriptor.LOGIN_URL}" value="${it.loginUrl}"/>
+        </f:entry>
+        <f:entry title="JSON Data:" field="requestJson" help="Should describe the JSON request structure required for a successful login">
+            <f:textarea field="requestJson" default="${descriptor.JSON_LOGIN_REQUEST}" value="${it.requestJson}" codemirror-mode="groovy"/>
+        </f:entry>
+        <f:entry title="Username field:" field="usernameField" help="Identifies the username field provided previously">
+            <f:textbox default='${descriptor.JSON_LOGIN_USERNAME_FIELD}' value="${it.usernameField}"/>
+        </f:entry>
+        <f:entry title="Password field:" field="passwordField" help="Identifies the password field provided previously">
+            <f:textbox default='${descriptor.JSON_LOGIN_PASSWORD_FIELD}' value="${it.passwordField}"/>
+        </f:entry>
+
+        <!--<f:entry title="Logged In Regex:" field="loggedInRegex" help="Optional Regex that can be used to identify a successful logged-in state" >
+            <f:textbox default="${descriptor.LOGGED_IN_REGGEX}" value="${it.loggedInRegex}"/>
+        </f:entry>
+        <f:entry title="Logged Out Regex:" field="loggedOutRegex" help="Optional Regex that can be used to identify logged-off state" >
+            <f:textbox default="${descriptor.LOGGED_OUT_REGGEX}" value="${it.loggedOutRegex}"/>
+        </f:entry>-->
+
+        <f:entry field="users">
+            <f:hetero-list name="users"
+                           hasHeader="true"
+                           descriptors="${descriptor.getUsersDescriptors()}"
+                           items="${instance.users}"
+                           addCaption="${%Add User}"/>
+        </f:entry>
+    </f:optionalBlock>
+</j:jelly>

@@ -1,5 +1,5 @@
 <j:jelly xmlns:j="jelly:core" xmlns:f="/lib/form">
-    <f:entry title="Include Url:" field="url">
+    <f:entry title="Exclude Url:" field="url">
         <f:textbox/>
     </f:entry>
 </j:jelly>

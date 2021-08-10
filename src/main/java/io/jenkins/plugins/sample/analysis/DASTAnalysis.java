@@ -10,31 +10,32 @@ import lombok.Getter;
 import lombok.Setter;
 import org.kohsuke.stapler.DataBoundConstructor;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class DASTAnalysis extends Entry implements ConsoleSupport {
     @Getter @Setter private ScanMethod scanMethod;
-    //@Getter @Setter private List<Entry> includeUrls;
-    //@Getter @Setter private List<Entry> excludeUrls;
-    //Login Properties
-    //@Getter @Setter private LoginProperties useLogin;
+    @Getter @Setter private List<Entry> includeUrls;
+    @Getter @Setter private List<Entry> excludeUrls;
+    @Getter @Setter private LoginProperties loginProperties;
 
     @DataBoundConstructor
     @SuppressWarnings("unused")
-    public DASTAnalysis(ScanMethod scanMethod) { //, List<Entry> includeUrls, List<Entry> excludeUrls, LoginProperties useLogin
+    public DASTAnalysis(ScanMethod scanMethod, List<Entry> includeUrls, List<Entry> excludeUrls, LoginProperties loginProperties) {
         this.scanMethod = scanMethod;
-        //this.includeUrls = includeUrls;
-        //this.excludeUrls = excludeUrls;
-        /*if (useLogin!=null){
-            this.useLogin = useLogin;
-        }*/
+        this.includeUrls = includeUrls != null ? new ArrayList<>(includeUrls) : Collections.emptyList();
+        this.excludeUrls = excludeUrls != null ? new ArrayList<>(excludeUrls) : Collections.emptyList();
+        if (loginProperties !=null){
+            this.loginProperties = loginProperties;
+        }
     }
 
     @Override
     public String generateCMD() {
         String cmd = "";
 
-        /*if (includeUrls != null){
+        if (includeUrls != null){
             for (Entry entry: includeUrls) {
                 cmd+=entry.generateCMD();
             }
@@ -43,12 +44,12 @@ public class DASTAnalysis extends Entry implements ConsoleSupport {
             for (Entry entry : excludeUrls) {
                 cmd += entry.generateCMD();
             }
-        }*/
+        }
         cmd += scanMethod.generateCMD();
 
-        /*if (useLogin!=null){
-            cmd += useLogin.generateCMD();
-        }*/
+        if (loginProperties !=null){
+            cmd += loginProperties.generateCMD();
+        }
         return cmd;
     }
 

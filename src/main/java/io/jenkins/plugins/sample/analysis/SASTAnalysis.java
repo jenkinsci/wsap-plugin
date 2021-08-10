@@ -6,7 +6,9 @@ import io.jenkins.plugins.sample.ConsoleSupport;
 import io.jenkins.plugins.sample.Entry;
 import lombok.Getter;
 import lombok.Setter;
+import net.sf.json.JSONObject;
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.StaplerRequest;
 
 public class SASTAnalysis extends Entry implements ConsoleSupport {
     @Getter @Setter private String target;
@@ -22,5 +24,23 @@ public class SASTAnalysis extends Entry implements ConsoleSupport {
     }
 
     @Extension
-    public static class DescriptorImpl extends Descriptor<Entry> {}
+    public static class DescriptorImpl extends Descriptor<Entry> {
+        public String TARGET;
+
+        public DescriptorImpl() {
+            load();
+        }
+
+        @Override
+        public synchronized void load() {
+            TARGET = "/home/jenkins/vulnado";
+            super.load();
+        }
+
+        @Override
+        public boolean configure(StaplerRequest req, JSONObject json) throws FormException {
+            save();
+            return super.configure( req, json );
+        }
+    }
 }
