@@ -1,13 +1,17 @@
 package io.jenkins.plugins.sample;
 
-import com.google.common.collect.ImmutableList;
 import com.jcraft.jsch.*;
 import edu.umd.cs.findbugs.annotations.NonNull;
+import hudson.EnvVars;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.*;
+import hudson.slaves.EnvironmentVariablesNodeProperty;
+import hudson.slaves.NodeProperty;
+import hudson.slaves.NodePropertyDescriptor;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
+import hudson.util.DescribableList;
 import hudson.util.FormValidation;
 import io.jenkins.plugins.sample.analysis.*;
 import jenkins.model.Jenkins;
@@ -15,9 +19,9 @@ import jenkins.tasks.SimpleBuildStep;
 import lombok.Getter;
 import lombok.Setter;
 import net.sf.json.JSONObject;
+import net.sf.json.JSONSerializer;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
-import org.kohsuke.stapler.StaplerRequest;
 
 import java.io.*;
 import java.net.MalformedURLException;
@@ -63,9 +67,53 @@ public class WsapBuilder extends Builder implements SimpleBuildStep,ConsoleSuppo
 
     @Override
     public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) throws InterruptedException, IOException {
+        listener.getLogger().println("Attempting to create session!");
+
+        String reportFilePath = performAnalysis(listener);
+        System.out.println(reportFilePath);
+
+        JSONObject jsonReport = retreiveReport(listener, reportFilePath);
+        System.out.println(jsonReport.toString());
+
+        createEnvReport(jsonReport);
+        return true;
+    }
+
+    private void createEnvReport(JSONObject jsonReport) {
+        createGlobalEnvironmentVariables("Var1","Dummy");
+    }
+
+    public void createGlobalEnvironmentVariables(String key, String value){
+        Jenkins instance = Jenkins.getInstanceOrNull();
+        try {
+            DescribableList<NodeProperty<?>, NodePropertyDescriptor> globalNodeProperties = instance.getGlobalNodeProperties();
+            List<EnvironmentVariablesNodeProperty> envVarsNodePropertyList = globalNodeProperties.getAll(EnvironmentVariablesNodeProperty.class);
+
+            EnvironmentVariablesNodeProperty newEnvVarsNodeProperty = null;
+            EnvVars envVars = null;
+
+            if ( envVarsNodePropertyList == null || envVarsNodePropertyList.size() == 0 ) {
+                newEnvVarsNodeProperty = new hudson.slaves.EnvironmentVariablesNodeProperty();
+                globalNodeProperties.add(newEnvVarsNodeProperty);
+                envVars = newEnvVarsNodeProperty.getEnvVars();
+            } else {
+                envVars = envVarsNodePropertyList.get(0).getEnvVars();
+            }
+            envVars.put(key, value);
+
+            instance.save();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+
+    public String performAnalysis(BuildListener listener){
         JSch jsch = new JSch();
         Session session = null;
         String privateKeyPath = "/home/jenkins/.ssh/id_rsa";
+        String report_location = "";
+
         try {
             jsch.addIdentity(privateKeyPath);
             session = jsch.getSession(userSSH, ipAddress, SSH_PORT);
@@ -101,9 +149,14 @@ public class WsapBuilder extends Builder implements SimpleBuildStep,ConsoleSuppo
                 while(in.available()>0){
                     int i=in.read(tmp, 0, 1024);
                     if(i<0)break;
-                    listener.getLogger().println(new String(tmp, 0, i));
+                    String textBlock = new String(tmp, 0, i);
+                    listener.getLogger().println(textBlock);
+
+                    String[] lines = textBlock.split("\n");
+                    report_location = lines[lines.length-1];
                 }
                 if(channel.isClosed()){
+                    System.out.println("Current report_location: "+report_location);
                     listener.getLogger().println("exit-status: "+channel.getExitStatus());
                     break;
                 }
@@ -112,12 +165,75 @@ public class WsapBuilder extends Builder implements SimpleBuildStep,ConsoleSuppo
 
             channel.disconnect();
             session.disconnect();
-        } catch (JSchException e) {
+        } catch (JSchException | IOException e) {
             throw new RuntimeException(e.getMessage());
             //throw new RuntimeException("Error durring SSH command execution. Command: " + command);
         }
-        return true;
+        return report_location;
     }
+
+
+
+    private JSONObject retreiveReport(BuildListener listener, String reportFilePath) {
+        JSch jsch = new JSch();
+        Session session = null;
+        String privateKeyPath = "/home/jenkins/.ssh/id_rsa";
+        JSONObject jsonReport = new JSONObject();
+        try {
+            jsch.addIdentity(privateKeyPath);
+            session = jsch.getSession(userSSH, ipAddress, SSH_PORT);
+            session.setConfig("PreferredAuthentications", "publickey,keyboard-interactive,password");
+            java.util.Properties config = new java.util.Properties();
+            config.put("StrictHostKeyChecking", "no");
+            session.setConfig(config);
+            listener.getLogger().println("Session created with success!!!!!!");
+        } catch (JSchException e) {
+            throw new RuntimeException("Failed to create Jsch Session object.", e);
+        }
+        listener.getLogger().println("Attempting to ssh:");
+        listener.getLogger().println(String.format("ssh -i %s %s@%s",privateKeyPath,userSSH,ipAddress));
+        String command = String.format("python3 %s/main.py %s",wsapLocation,generateCMD());
+        listener.getLogger().println(command);
+
+        try {
+            session.connect();
+            if (!session.isConnected())
+                throw new RuntimeException("Not connected to an open session.  Call open() first!");
+
+            Channel channel = session.openChannel("sftp");
+            channel.connect();
+            ChannelSftp sftpChannel = (ChannelSftp) channel;
+
+            InputStream stream = sftpChannel.get(reportFilePath);
+            try {
+                StringBuilder sb = new StringBuilder();
+                BufferedReader br = new BufferedReader(new InputStreamReader(stream));
+                String line;
+                while ((line = br.readLine()) != null) {
+                    sb.append(line);
+                }
+                jsonReport = (JSONObject) JSONSerializer.toJSON(sb.toString());
+
+            } catch (IOException io) {
+                System.out.println("Exception occurred during reading file from SFTP server due to " + io.getMessage());
+                io.getMessage();
+
+            } catch (Exception e) {
+                System.out.println("Exception occurred during reading file from SFTP server due to " + e.getMessage());
+                e.getMessage();
+
+            }
+
+            sftpChannel.exit();
+            session.disconnect();
+        } catch (JSchException | SftpException e) {
+            throw new RuntimeException(e.getMessage());
+            //throw new RuntimeException("Error durring SSH command execution. Command: " + command);
+        }
+        return jsonReport;
+    }
+
+
 
     @Extension
     public static final class DescriptorImpl extends BuildStepDescriptor<Builder> {
