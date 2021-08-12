@@ -9,6 +9,10 @@
         <f:textbox default="${descriptor.TARGET_URL}" value="${it.targetUrl}"/>
     </f:entry>
 
+    <f:entry title="Environment Variables:" field="envVar" description="WSAP will generate both ENV_VAR and ENV_VAR_RESULTS">
+        <f:textbox default="${descriptor.ENV_VAR}" value="${it.envVar}"/>
+    </f:entry>
+
     <f:section title="Scanner Properties" >
         <f:entry title="SSH username" field="userSSH">
             <f:textbox default="${descriptor.SSH_USER}" value="${it.userSSH}"/>

@@ -4,13 +4,13 @@
         <f:entry title="Login Url:" field="loginUrl">
             <f:textbox default="${descriptor.LOGIN_URL}" value="${it.loginUrl}"/>
         </f:entry>
-        <f:entry title="JSON Data:" field="requestJson" help="Should describe the JSON request structure required for a successful login">
+        <f:entry title="JSON Data:" field="requestJson" description="Should describe the JSON request structure required for a successful login">
             <f:textarea field="requestJson" default="${descriptor.JSON_LOGIN_REQUEST}" value="${it.requestJson}" codemirror-mode="groovy"/>
         </f:entry>
-        <f:entry title="Username field:" field="usernameField" help="Identifies the username field provided previously">
+        <f:entry title="Username field:" field="usernameField" description="Identifies the username field provided previously">
             <f:textbox default='${descriptor.JSON_LOGIN_USERNAME_FIELD}' value="${it.usernameField}"/>
         </f:entry>
-        <f:entry title="Password field:" field="passwordField" help="Identifies the password field provided previously">
+        <f:entry title="Password field:" field="passwordField" description="Identifies the password field provided previously">
             <f:textbox default='${descriptor.JSON_LOGIN_PASSWORD_FIELD}' value="${it.passwordField}"/>
         </f:entry>
 

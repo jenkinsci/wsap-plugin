@@ -18,6 +18,7 @@ import jenkins.model.Jenkins;
 import jenkins.tasks.SimpleBuildStep;
 import lombok.Getter;
 import lombok.Setter;
+import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 import net.sf.json.JSONSerializer;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -33,6 +34,7 @@ import java.util.*;
 public class WsapBuilder extends Builder implements SimpleBuildStep,ConsoleSupport {
     private final int SSH_PORT = 22;
     @Getter @Setter private  String targetUrl;
+    @Getter @Setter private String envVar;
 
     //Scan Properties
     @Getter @Setter private String wsapLocation;
@@ -46,9 +48,10 @@ public class WsapBuilder extends Builder implements SimpleBuildStep,ConsoleSuppo
 
     @DataBoundConstructor
     @SuppressWarnings("unused")
-    public WsapBuilder(String wsapLocation, String targetUrl, String userSSH, String ipAddress, int port, String apiKey,  SASTAnalysis sastAnalysis, DASTAnalysis dastAnalysis){
+    public WsapBuilder(String wsapLocation, String envVar, String targetUrl, String userSSH, String ipAddress, int port, String apiKey,  SASTAnalysis sastAnalysis, DASTAnalysis dastAnalysis){
         this.wsapLocation = wsapLocation;
         this.targetUrl = targetUrl;
+        this.envVar = envVar;
         this.userSSH = userSSH;
         this.ipAddress = ipAddress;
         this.port = port;
@@ -73,14 +76,31 @@ public class WsapBuilder extends Builder implements SimpleBuildStep,ConsoleSuppo
         System.out.println(reportFilePath);
 
         JSONObject jsonReport = retreiveReport(listener, reportFilePath);
-        System.out.println(jsonReport.toString());
 
-        createEnvReport(jsonReport);
+        int criticalVul = processReport(jsonReport);
+        createGlobalEnvironmentVariables(envVar, targetUrl);
+        createGlobalEnvironmentVariables(envVar+"_RESULTS", String.valueOf(criticalVul));
+
         return true;
     }
 
-    private void createEnvReport(JSONObject jsonReport) {
-        createGlobalEnvironmentVariables("Var1","Dummy");
+    private int processReport(JSONObject jsonReport) {
+        int criticalVul = 0;
+        Iterator<String> keys = (Iterator<String>) jsonReport.keys();
+        while (keys.hasNext()) {
+            String key = keys.next();
+            JSONObject value = jsonReport.getJSONObject(key);
+
+            Iterator<String> levels = (Iterator<String>) value.keys();
+            String level = levels.next();
+
+            JSONArray vulnerabilities = value.getJSONArray(level);
+            criticalVul += vulnerabilities.size();
+            System.out.println(String.format("Found %s critical vulnerabilities with %s", key, vulnerabilities.size()));
+            System.out.println(key);
+        }
+        System.out.println("Critical Vulnerabilities found: "+criticalVul);
+        return criticalVul;
     }
 
     public void createGlobalEnvironmentVariables(String key, String value){
@@ -191,9 +211,7 @@ public class WsapBuilder extends Builder implements SimpleBuildStep,ConsoleSuppo
             throw new RuntimeException("Failed to create Jsch Session object.", e);
         }
         listener.getLogger().println("Attempting to ssh:");
-        listener.getLogger().println(String.format("ssh -i %s %s@%s",privateKeyPath,userSSH,ipAddress));
-        String command = String.format("python3 %s/main.py %s",wsapLocation,generateCMD());
-        listener.getLogger().println(command);
+        listener.getLogger().println("Retrieving vulnerability audit file: "+reportFilePath);
 
         try {
             session.connect();
@@ -239,6 +257,7 @@ public class WsapBuilder extends Builder implements SimpleBuildStep,ConsoleSuppo
     public static final class DescriptorImpl extends BuildStepDescriptor<Builder> {
         public String WSAP_LOCATION;
         public String TARGET_URL;
+        public String ENV_VAR;
         public String SSH_USER;
         public String SCANNER_IP;
         public String SCANNER_PORT;
@@ -251,6 +270,7 @@ public class WsapBuilder extends Builder implements SimpleBuildStep,ConsoleSuppo
         public synchronized void load() {
             WSAP_LOCATION = "/home/marquez/Desktop/wsap";
             TARGET_URL = "http://127.0.0.1";
+            ENV_VAR = "DEFINE_ME";
             SSH_USER = "marquez";
             SCANNER_IP = "127.0.0.1";
             SCANNER_PORT = "8010";
