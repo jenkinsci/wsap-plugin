@@ -35,6 +35,7 @@ public class WsapBuilder extends Builder implements SimpleBuildStep,ConsoleSuppo
     private final int SSH_PORT = 22;
     @Getter @Setter private  String targetUrl;
     @Getter @Setter private String envVar;
+    @Getter @Setter private String privateKeyPath;
 
     //Scan Properties
     @Getter @Setter private String wsapLocation;
@@ -48,9 +49,10 @@ public class WsapBuilder extends Builder implements SimpleBuildStep,ConsoleSuppo
 
     @DataBoundConstructor
     @SuppressWarnings("unused")
-    public WsapBuilder(String wsapLocation, String envVar, String targetUrl, String userSSH, String ipAddress, int port, String apiKey,  SASTAnalysis sastAnalysis, DASTAnalysis dastAnalysis){
+    public WsapBuilder(String wsapLocation, String envVar, String privateKeyPath, String targetUrl, String userSSH, String ipAddress, int port, String apiKey,  SASTAnalysis sastAnalysis, DASTAnalysis dastAnalysis){
         this.wsapLocation = wsapLocation;
         this.targetUrl = targetUrl;
+        this.privateKeyPath = privateKeyPath;
         this.envVar = envVar;
         this.userSSH = userSSH;
         this.ipAddress = ipAddress;
@@ -131,7 +133,6 @@ public class WsapBuilder extends Builder implements SimpleBuildStep,ConsoleSuppo
     public String performAnalysis(BuildListener listener){
         JSch jsch = new JSch();
         Session session = null;
-        String privateKeyPath = "/home/jenkins/.ssh/id_rsa";
         String report_location = "";
 
         try {
@@ -197,7 +198,6 @@ public class WsapBuilder extends Builder implements SimpleBuildStep,ConsoleSuppo
     private JSONObject retreiveReport(BuildListener listener, String reportFilePath) {
         JSch jsch = new JSch();
         Session session = null;
-        String privateKeyPath = "/home/jenkins/.ssh/id_rsa";
         JSONObject jsonReport = new JSONObject();
         try {
             jsch.addIdentity(privateKeyPath);
@@ -251,13 +251,12 @@ public class WsapBuilder extends Builder implements SimpleBuildStep,ConsoleSuppo
         return jsonReport;
     }
 
-
-
     @Extension
     public static final class DescriptorImpl extends BuildStepDescriptor<Builder> {
         public String WSAP_LOCATION;
         public String TARGET_URL;
         public String ENV_VAR;
+        public String PRIVATE_KEY_PATH;
         public String SSH_USER;
         public String SCANNER_IP;
         public String SCANNER_PORT;
@@ -271,6 +270,7 @@ public class WsapBuilder extends Builder implements SimpleBuildStep,ConsoleSuppo
             WSAP_LOCATION = "/home/marquez/Desktop/wsap";
             TARGET_URL = "http://127.0.0.1";
             ENV_VAR = "DEFINE_ME";
+            PRIVATE_KEY_PATH = "~/.ssh/id_rsa";
             SSH_USER = "marquez";
             SCANNER_IP = "127.0.0.1";
             SCANNER_PORT = "8010";
