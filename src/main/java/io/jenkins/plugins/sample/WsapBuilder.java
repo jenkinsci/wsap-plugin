@@ -174,7 +174,10 @@ public class WsapBuilder extends Builder implements SimpleBuildStep,ConsoleSuppo
                     listener.getLogger().println(textBlock);
 
                     String[] lines = textBlock.split("\n");
-                    report_location = lines[lines.length-1];
+                    boolean bufferHasLines = lines.length > 0;
+                    if (bufferHasLines){
+                        report_location = lines[lines.length-1];
+                    }
                 }
                 if(channel.isClosed()){
                     System.out.println("Current report_location: "+report_location);
