@@ -1,28 +1,6 @@
-# wasp_jenkins
+# Web Security Application Project (WSAP) for Jenkins
+The WSAP solution pretends to enhance the CI/CD development by identifying the security vulnerabilities during the early stage of software development.
 
-## Introduction
+Currently, Web Security Application Project (WSAP) for Jenkins works as a forward redirecting all intending actions to a dedicated machine with an active instance of WSAP (https://github.com/Yvtq8K3n/wsap).
 
-TODO Describe what your plugin does here
-
-## Getting started
-
-TODO Tell users how to configure your plugin here, include screenshots, pipeline examples and 
-configuration-as-code examples.
-
-## Issues
-
-TODO Decide where you're going to host your issues, the default is Jenkins JIRA, but you can also enable GitHub issues,
-If you use GitHub issues there's no need for this section; else add the following line:
-
-Report issues and enhancements in the [Jenkins issue tracker](https://issues.jenkins-ci.org/).
-
-## Contributing
-
-TODO review the default [CONTRIBUTING](https://github.com/jenkinsci/.github/blob/master/CONTRIBUTING.md) file and make sure it is appropriate for your plugin, if not then add your own one adapted from the base file
-
-Refer to our [contribution guidelines](https://github.com/jenkinsci/.github/blob/master/CONTRIBUTING.md)
-
-## LICENSE
-
-Licensed under MIT, see [LICENSE](LICENSE.md)
-
+WSAP for Jenkins can be used either as a schedule standalone project or integrated directly into a pipeline.
