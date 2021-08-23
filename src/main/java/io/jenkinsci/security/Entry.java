@@ -1,4 +1,4 @@
-package io.jenkins.plugins.sample;
+package io.jenkinsci.security;
 
 import hudson.ExtensionPoint;
 import hudson.model.AbstractDescribableImpl;

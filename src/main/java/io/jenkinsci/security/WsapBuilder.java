@@ -1,4 +1,4 @@
-package io.jenkins.plugins.sample;
+package io.jenkinsci.security;
 
 import com.jcraft.jsch.*;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -13,7 +13,8 @@ import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
 import hudson.util.DescribableList;
 import hudson.util.FormValidation;
-import io.jenkins.plugins.sample.analysis.*;
+import io.jenkinsci.security.analysis.DASTAnalysis;
+import io.jenkinsci.security.analysis.SASTAnalysis;
 import jenkins.model.Jenkins;
 import jenkins.tasks.SimpleBuildStep;
 import lombok.Getter;

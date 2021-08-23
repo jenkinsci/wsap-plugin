@@ -1,4 +1,4 @@
-package io.jenkins.plugins.sample;
+package io.jenkinsci.security;
 
 import hudson.model.FreeStyleBuild;
 import hudson.model.FreeStyleProject;

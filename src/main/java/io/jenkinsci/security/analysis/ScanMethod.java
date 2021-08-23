@@ -1,18 +1,16 @@
-package io.jenkins.plugins.sample.analysis;
+package io.jenkinsci.security.analysis;
 
-import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import hudson.Extension;
 import hudson.model.Descriptor;
-import io.jenkins.plugins.sample.ConsoleSupport;
-import io.jenkins.plugins.sample.Entry;
+import io.jenkinsci.security.ConsoleSupport;
+import io.jenkinsci.security.Entry;
 import lombok.Getter;
 import lombok.Setter;
 import net.sf.json.JSONObject;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.StaplerRequest;
 
-import static io.jenkins.plugins.sample.analysis.ScanMethod.DescriptorImpl.DEFAULT_SCAN;
+import static io.jenkinsci.security.analysis.ScanMethod.DescriptorImpl.DEFAULT_SCAN;
 
 public class ScanMethod extends Entry implements ConsoleSupport {
     @Getter @Setter
