@@ -305,33 +305,15 @@ public class WsapBuilder extends Builder implements SimpleBuildStep,ConsoleSuppo
             }
         }
 
+        public FormValidation doCheckScanMethod(@QueryParameter String value){
+            return FormValidation.error(value);
+        }
+
         public FormValidation doCheckTargetUrl(@QueryParameter String targetUrl){
             try {
                 new URL(targetUrl).toURI();
                 return FormValidation.ok();
             } catch (MalformedURLException | URISyntaxException e) {
-                return FormValidation.error(e.getMessage());
-            }
-        }
-
-        public FormValidation doCheckScanMethod(@QueryParameter String value){
-            return FormValidation.error(value);
-        }
-
-        public FormValidation doCheckApiUrl(@QueryParameter String apiUrl){
-                try {
-                    new URL(apiUrl).toURI();
-                    return FormValidation.ok();
-                } catch (MalformedURLException | URISyntaxException e) {
-                    return FormValidation.error(e.getMessage());
-                }
-        }
-
-        public FormValidation doCheckApiDefinition(@QueryParameter String apiDefinition){
-            try {
-                new URI(apiDefinition);
-                return FormValidation.ok();
-            } catch (Exception e) {
                 return FormValidation.error(e.getMessage());
             }
         }
