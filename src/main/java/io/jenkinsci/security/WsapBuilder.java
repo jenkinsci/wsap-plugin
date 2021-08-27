@@ -1,11 +1,13 @@
 package io.jenkinsci.security;
 
+
 import com.jcraft.jsch.*;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.EnvVars;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.*;
+import hudson.security.ACL;
 import hudson.slaves.EnvironmentVariablesNodeProperty;
 import hudson.slaves.NodeProperty;
 import hudson.slaves.NodePropertyDescriptor;
@@ -24,10 +26,8 @@ import net.sf.json.JSONObject;
 import net.sf.json.JSONSerializer;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
-
 import java.io.*;
 import java.net.MalformedURLException;
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.*;
@@ -73,20 +73,24 @@ public class WsapBuilder extends Builder implements SimpleBuildStep,ConsoleSuppo
 
     @Override
     public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) throws InterruptedException, IOException {
+        listener.getLogger().println("Calling user");
+        System.out.println("Calling user");
+        //SSHUserPrivateKey user = lookupSystemCredentials("bee2d415-5594-458d-adb9-31bc1a5deaca");
+
+        //listener.getLogger().println("User value:" + user);
         listener.getLogger().println("Attempting to create session!");
 
-        String reportFilePath = performAnalysis(listener);
+        /*String reportFilePath = performAnalysis(listener);
         System.out.println(reportFilePath);
 
         JSONObject jsonReport = retreiveReport(listener, reportFilePath);
 
         int criticalVul = processReport(jsonReport);
         createGlobalEnvironmentVariables(envVar, targetUrl);
-        createGlobalEnvironmentVariables(envVar+"_RESULTS", String.valueOf(criticalVul));
+        createGlobalEnvironmentVariables(envVar+"_RESULTS", String.valueOf(criticalVul));*/
 
         return true;
     }
-
     private int processReport(JSONObject jsonReport) {
         int criticalVul = 0;
         Iterator<String> keys = (Iterator<String>) jsonReport.keys();
@@ -130,8 +134,8 @@ public class WsapBuilder extends Builder implements SimpleBuildStep,ConsoleSuppo
         }
     }
 
-
     public String performAnalysis(BuildListener listener){
+
         JSch jsch = new JSch();
         Session session = null;
         String report_location = "";
@@ -197,7 +201,31 @@ public class WsapBuilder extends Builder implements SimpleBuildStep,ConsoleSuppo
         return report_location;
     }
 
+    private void test(){
+        /*StandardUsernameCredentials user = ...
+        JSchConnector connector = new JSchConnector(user.getUsername(), hostName, port);
 
+        SSHAuthenticator authenticator = null;
+        try {
+            authenticator = SSHAuthenticator.newInstance(connector, user);
+            authenticator.authenticate();
+            Session session = connector.getSession();
+            session.setConfig(...);
+            session.connect(timeout);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }*/
+    }
+
+    /*public static SSHUserPrivateKey lookupSystemCredentials(String credentialsId) {
+        SSHUserPrivateKey supk = CredentialsMatchers.firstOrNull(
+                CredentialsProvider.lookupCredentials(SSHUserPrivateKey.class, Jenkins.getInstance(), ACL.SYSTEM,
+                        Collections.<DomainRequirement>emptyList()),
+                CredentialsMatchers.withId(credentialsId));
+        return supk;
+    }*/
 
     private JSONObject retreiveReport(BuildListener listener, String reportFilePath) {
         JSch jsch = new JSch();
