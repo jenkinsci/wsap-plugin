@@ -275,7 +275,7 @@ public class WsapBuilder extends Builder implements SimpleBuildStep,ConsoleSuppo
 
         @Override
         public synchronized void load() {
-            WSAP_LOCATION = "/home/marquez/Desktop/wsap";
+            WSAP_LOCATION = "WSAP_LOCATION_DIRECTORY/wsap";
             TARGET_URL = "http://TARGET_URL";
             ENV_VAR = "DEFINE_ME";
             SCANNER_IP = "127.0.0.1";

@@ -75,8 +75,8 @@ public class ScanMethod extends Entry implements ConsoleSupport {
 
         @Override
         public synchronized void load() {
-            API_URL = "http://target_url.com/api";
-            API_DEFINITION = "file:///home/marquez/Desktop/openapi.json";
+            API_URL = "http://TARGET_URL_API";
+            API_DEFINITION = "file:///API_DEFINITION_LOCATION/openapi.json";
             super.load();
         }
 

@@ -12,14 +12,69 @@
       <option name="url" value="https://repo.jenkins-ci.org/public/" />
     </remote-repository>
     <remote-repository>
+      <option name="id" value="jenkins-releases" />
+      <option name="name" value="Jenkins Releases" />
+      <option name="url" value="https://repo.jenkins-ci.org/releases/" />
+    </remote-repository>
+    <remote-repository>
+      <option name="id" value="jenkins-public" />
+      <option name="name" value="Jenkins Public" />
+      <option name="url" value="http://repo.jenkins-ci.org/public" />
+    </remote-repository>
+    <remote-repository>
       <option name="id" value="central" />
       <option name="name" value="Maven Central repository" />
       <option name="url" value="https://repo1.maven.org/maven2" />
     </remote-repository>
     <remote-repository>
+      <option name="id" value="repo.jenkins-ci2.org" />
+      <option name="name" value="repo.jenkins-ci2.org" />
+      <option name="url" value="https://repo.jenkins-ci.org/public/" />
+    </remote-repository>
+    <remote-repository>
+      <option name="id" value="plugins.jenkins-ci.org" />
+      <option name="name" value="plugins.jenkins-ci.org" />
+      <option name="url" value="https://repo.jenkins-ci.org/releases/" />
+    </remote-repository>
+    <remote-repository>
+      <option name="id" value="repo.jenkins-ci.org" />
+      <option name="name" value="repo.jenkins-ci.org" />
+      <option name="url" value="https://repo.jenkins-ci.org/releases/" />
+    </remote-repository>
+    <remote-repository>
+      <option name="id" value="org.jenkins-ci.plugins" />
+      <option name="name" value="org.jenkins-ci.plugins" />
+      <option name="url" value="https://repo.jenkins-ci.org/releases/" />
+    </remote-repository>
+    <remote-repository>
+      <option name="id" value="repo.maven.org" />
+      <option name="name" value="repo.maven.org" />
+      <option name="url" value="https://repo1.maven.org/maven2/" />
+    </remote-repository>
+    <remote-repository>
+      <option name="id" value="13ad6bfa-4068-43ca-9ff0-0c87c6e6a9c4" />
+      <option name="name" value="13ad6bfa-4068-43ca-9ff0-0c87c6e6a9c4" />
+      <option name="url" value="https://repo.jenkins-ci.org/releases/" />
+    </remote-repository>
+    <remote-repository>
+      <option name="id" value="org.jenkins-ci.plugins" />
+      <option name="name" value="org.jenkins-ci.plugins" />
+      <option name="url" value="https://mvnrepository.com/artifact/org.jenkins-ci.plugins/structs" />
+    </remote-repository>
+    <remote-repository>
       <option name="id" value="jboss.community" />
       <option name="name" value="JBoss Community repository" />
       <option name="url" value="https://repository.jboss.org/nexus/content/repositories/public/" />
+    </remote-repository>
+    <remote-repository>
+      <option name="id" value="repo.jenkins-ci2.org" />
+      <option name="name" value="repo.jenkins-ci2.org" />
+      <option name="url" value="https://repo1.maven.org/maven2/" />
+    </remote-repository>
+    <remote-repository>
+      <option name="id" value="repo.jenkins-ci.org" />
+      <option name="name" value="repo.jenkins-ci.org" />
+      <option name="url" value="https://repo.spring.io/plugins-release/" />
     </remote-repository>
   </component>
 </project>
