@@ -1,12 +1,18 @@
 package io.jenkinsci.security;
 
 
+import com.cloudbees.jenkins.plugins.sshcredentials.SSHAuthenticator;
+import com.cloudbees.plugins.credentials.CredentialsMatchers;
+import com.cloudbees.plugins.credentials.CredentialsProvider;
+import com.cloudbees.plugins.credentials.common.StandardUsernameCredentials;
+import com.cloudbees.plugins.credentials.domains.SchemeRequirement;
 import com.jcraft.jsch.*;
-import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.EnvVars;
 import hudson.Extension;
 import hudson.Launcher;
-import hudson.model.*;
+import hudson.model.AbstractBuild;
+import hudson.model.AbstractProject;
+import hudson.model.BuildListener;
 import hudson.security.ACL;
 import hudson.slaves.EnvironmentVariablesNodeProperty;
 import hudson.slaves.NodeProperty;
@@ -15,32 +21,43 @@ import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
 import hudson.util.DescribableList;
 import hudson.util.FormValidation;
+import hudson.util.StreamTaskListener;
 import io.jenkinsci.security.analysis.DASTAnalysis;
 import io.jenkinsci.security.analysis.SASTAnalysis;
 import jenkins.model.Jenkins;
 import jenkins.tasks.SimpleBuildStep;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.Setter;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 import net.sf.json.JSONSerializer;
+import org.jenkinsci.plugins.jsch.JSchConnector;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
-import java.io.*;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.util.*;
+import java.nio.charset.Charset;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Properties;
 
 public class WsapBuilder extends Builder implements SimpleBuildStep,ConsoleSupport {
     private final int SSH_PORT = 22;
-    @Getter @Setter private  String targetUrl;
+    @Getter
+    @Setter
+    private  String targetUrl;
     @Getter @Setter private String envVar;
-    @Getter @Setter private String privateKeyPath;
+    @Getter @Setter private String credentialId;
 
     //Scan Properties
     @Getter @Setter private String wsapLocation;
-    @Getter @Setter private String userSSH;
     @Getter @Setter private String ipAddress;
     @Getter @Setter private int port;
 
@@ -48,14 +65,15 @@ public class WsapBuilder extends Builder implements SimpleBuildStep,ConsoleSuppo
     @Getter @Setter public SASTAnalysis sastAnalysis;
     @Getter @Setter public DASTAnalysis dastAnalysis;
 
+    public static final SchemeRequirement SSH_SCHEME = new SchemeRequirement("ssh");
+
     @DataBoundConstructor
     @SuppressWarnings("unused")
-    public WsapBuilder(String wsapLocation, String envVar, String privateKeyPath, String targetUrl, String userSSH, String ipAddress, int port, String apiKey,  SASTAnalysis sastAnalysis, DASTAnalysis dastAnalysis){
+    public WsapBuilder(String wsapLocation, String envVar, String credentialId, String targetUrl, String ipAddress, int port, String apiKey,  SASTAnalysis sastAnalysis, DASTAnalysis dastAnalysis){
         this.wsapLocation = wsapLocation;
         this.targetUrl = targetUrl;
-        this.privateKeyPath = privateKeyPath;
+        this.credentialId = credentialId;
         this.envVar = envVar;
-        this.userSSH = userSSH;
         this.ipAddress = ipAddress;
         this.port = port;
         this.sastAnalysis = sastAnalysis;
@@ -73,21 +91,35 @@ public class WsapBuilder extends Builder implements SimpleBuildStep,ConsoleSuppo
 
     @Override
     public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) throws InterruptedException, IOException {
-        listener.getLogger().println("Calling user");
-        System.out.println("Calling user");
-        //SSHUserPrivateKey user = lookupSystemCredentials("bee2d415-5594-458d-adb9-31bc1a5deaca");
+        StandardUsernameCredentials user = lookupSystemCredentials(credentialId);
+        if (user == null) {
+            String message = "Credentials with id '" + credentialId + "', no longer exist!";
+            listener.getLogger().println(message);
+            throw new InterruptedException(message);
+        }
 
-        //listener.getLogger().println("User value:" + user);
-        listener.getLogger().println("Attempting to create session!");
+        String username = user.getUsername();
+        final JSchConnector connector = new JSchConnector(username, ipAddress, SSH_PORT);
+        listener.getLogger().println("Successfully created Connector");
 
-        /*String reportFilePath = performAnalysis(listener);
-        System.out.println(reportFilePath);
+        final SSHAuthenticator<JSchConnector, StandardUsernameCredentials> authenticator = SSHAuthenticator
+                .newInstance(connector, user);
+        authenticator.authenticate(new StreamTaskListener(listener.getLogger(), Charset.defaultCharset()));
 
-        JSONObject jsonReport = retreiveReport(listener, reportFilePath);
+        final Session session = connector.getSession();
+        final Properties config = new Properties();
+        config.put("StrictHostKeyChecking", "no");
+        config.put("PreferredAuthentications", "publickey");
+        session.setConfig(config);
+
+        String reportFilePath = performAnalysis(listener, session, username);
+        listener.getLogger().println(String.format("Retrieved report file path as %s",reportFilePath));
+
+        JSONObject jsonReport = retrieveReport(listener, session, username, reportFilePath);
 
         int criticalVul = processReport(jsonReport);
         createGlobalEnvironmentVariables(envVar, targetUrl);
-        createGlobalEnvironmentVariables(envVar+"_RESULTS", String.valueOf(criticalVul));*/
+        createGlobalEnvironmentVariables(envVar+"_RESULTS", String.valueOf(criticalVul));
 
         return true;
     }
@@ -134,34 +166,18 @@ public class WsapBuilder extends Builder implements SimpleBuildStep,ConsoleSuppo
         }
     }
 
-    public String performAnalysis(BuildListener listener){
-
-        JSch jsch = new JSch();
-        Session session = null;
-        String report_location = "";
-
-        try {
-            jsch.addIdentity(privateKeyPath);
-            session = jsch.getSession(userSSH, ipAddress, SSH_PORT);
-            session.setConfig("PreferredAuthentications", "publickey,keyboard-interactive,password");
-            java.util.Properties config = new java.util.Properties();
-            config.put("StrictHostKeyChecking", "no");
-            session.setConfig(config);
-            listener.getLogger().println("Session created with success!!!!!!");
-        } catch (JSchException e) {
-            throw new RuntimeException("Failed to create Jsch Session object.", e);
-        }
-        listener.getLogger().println("Attempting to ssh:");
-        listener.getLogger().println(String.format("ssh -i %s %s@%s",privateKeyPath,userSSH,ipAddress));
+    public String performAnalysis(BuildListener listener, Session session, String username) throws InterruptedException, IOException {
+        listener.getLogger().println(String.format("Attempting to ssh as %s:",username));
         String command = String.format("python3 %s/main.py %s",wsapLocation,generateCMD());
         listener.getLogger().println(command);
 
+        String report_location = "";
         try {
             session.connect();
             if (!session.isConnected())
                 throw new RuntimeException("Not connected to an open session.  Call open() first!");
 
-            ChannelExec  channel = (ChannelExec) session.openChannel("exec");
+            ChannelExec channel = (ChannelExec) session.openChannel("exec");
             channel.setCommand(command);
             System.out.println("Connected");
             channel.setInputStream(null);
@@ -194,57 +210,17 @@ public class WsapBuilder extends Builder implements SimpleBuildStep,ConsoleSuppo
 
             channel.disconnect();
             session.disconnect();
-        } catch (JSchException | IOException e) {
+        } catch (IOException | JSchException e) {
             throw new RuntimeException(e.getMessage());
-            //throw new RuntimeException("Error durring SSH command execution. Command: " + command);
         }
         return report_location;
     }
 
-    private void test(){
-        /*StandardUsernameCredentials user = ...
-        JSchConnector connector = new JSchConnector(user.getUsername(), hostName, port);
-
-        SSHAuthenticator authenticator = null;
-        try {
-            authenticator = SSHAuthenticator.newInstance(connector, user);
-            authenticator.authenticate();
-            Session session = connector.getSession();
-            session.setConfig(...);
-            session.connect(timeout);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }*/
-    }
-
-    /*public static SSHUserPrivateKey lookupSystemCredentials(String credentialsId) {
-        SSHUserPrivateKey supk = CredentialsMatchers.firstOrNull(
-                CredentialsProvider.lookupCredentials(SSHUserPrivateKey.class, Jenkins.getInstance(), ACL.SYSTEM,
-                        Collections.<DomainRequirement>emptyList()),
-                CredentialsMatchers.withId(credentialsId));
-        return supk;
-    }*/
-
-    private JSONObject retreiveReport(BuildListener listener, String reportFilePath) {
-        JSch jsch = new JSch();
-        Session session = null;
-        JSONObject jsonReport = new JSONObject();
-        try {
-            jsch.addIdentity(privateKeyPath);
-            session = jsch.getSession(userSSH, ipAddress, SSH_PORT);
-            session.setConfig("PreferredAuthentications", "publickey,keyboard-interactive,password");
-            java.util.Properties config = new java.util.Properties();
-            config.put("StrictHostKeyChecking", "no");
-            session.setConfig(config);
-            listener.getLogger().println("Session created with success!!!!!!");
-        } catch (JSchException e) {
-            throw new RuntimeException("Failed to create Jsch Session object.", e);
-        }
-        listener.getLogger().println("Attempting to ssh:");
+    private JSONObject retrieveReport(BuildListener listener, Session session, String username, String reportFilePath) {
+        listener.getLogger().println(String.format("Attempting to ssh as %s:",username));
         listener.getLogger().println("Retrieving vulnerability audit file: "+reportFilePath);
 
+        JSONObject jsonReport = new JSONObject();
         try {
             session.connect();
             if (!session.isConnected())
@@ -283,13 +259,21 @@ public class WsapBuilder extends Builder implements SimpleBuildStep,ConsoleSuppo
         return jsonReport;
     }
 
+    public static StandardUsernameCredentials lookupSystemCredentials(String credentialsId) {
+        return CredentialsMatchers.firstOrNull(
+                CredentialsProvider
+                        .lookupCredentials(StandardUsernameCredentials.class, Jenkins.get(), ACL.SYSTEM,
+                                SSH_SCHEME),
+                CredentialsMatchers.withId(credentialsId)
+        );
+    }
+
+
     @Extension
     public static final class DescriptorImpl extends BuildStepDescriptor<Builder> {
         public String WSAP_LOCATION;
         public String TARGET_URL;
         public String ENV_VAR;
-        public String PRIVATE_KEY_PATH;
-        public String SSH_USER;
         public String SCANNER_IP;
         public String SCANNER_PORT;
 
@@ -300,13 +284,10 @@ public class WsapBuilder extends Builder implements SimpleBuildStep,ConsoleSuppo
         @Override
         public synchronized void load() {
             WSAP_LOCATION = "/home/marquez/Desktop/wsap";
-            TARGET_URL = "http://127.0.0.1";
+            TARGET_URL = "http://TARGET_URL";
             ENV_VAR = "DEFINE_ME";
-            PRIVATE_KEY_PATH = "~/.ssh/id_rsa";
-            SSH_USER = "marquez";
             SCANNER_IP = "127.0.0.1";
             SCANNER_PORT = "8010";
-
             super.load();
         }
 
@@ -344,6 +325,13 @@ public class WsapBuilder extends Builder implements SimpleBuildStep,ConsoleSuppo
             } catch (MalformedURLException | URISyntaxException e) {
                 return FormValidation.error(e.getMessage());
             }
+        }
+
+        public FormValidation doCheckCredentialId(@QueryParameter String credentialId){
+            if (credentialId == null || credentialId.isEmpty()){
+                return FormValidation.error("Please provide a credentialsID");
+            }
+            return FormValidation.ok();
         }
     }
 }

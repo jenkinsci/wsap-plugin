@@ -13,14 +13,11 @@
         <f:textbox default="${descriptor.ENV_VAR}" value="${it.envVar}"/>
     </f:entry>
 
-    <f:entry title="Private Key Path:" field="privateKeyPath" description="Provide the location of the private key on jenkins machine">
-        <f:textbox default="${descriptor.PRIVATE_KEY_PATH}" value="${it.privateKeyPath}"/>
+    <f:entry title="Credentials ID:"  field="credentialId" description="In order to establish a SSH Connection it is required the Credentials ID">
+        <f:textbox default="${descriptor.credentialId}" value="${it.credentialId}"/>
     </f:entry>
 
     <f:section title="Scanner Properties" >
-        <f:entry title="SSH username" field="userSSH">
-            <f:textbox default="${descriptor.SSH_USER}" value="${it.userSSH}"/>
-        </f:entry>
         <f:entry title="SSH IP" field="ipAddress">
             <f:textbox default="${descriptor.SCANNER_IP}" value="${it.ipAddress}"/>
         </f:entry>
