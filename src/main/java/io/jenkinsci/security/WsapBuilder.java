@@ -112,14 +112,23 @@ public class WsapBuilder extends Builder implements SimpleBuildStep,ConsoleSuppo
         config.put("PreferredAuthentications", "publickey");
         session.setConfig(config);
 
-        String reportFilePath = performAnalysis(listener, session, username);
-        listener.getLogger().println(String.format("Retrieved report file path as %s",reportFilePath));
+        try {
+            session.connect();
+            if (!session.isConnected())
+                throw new RuntimeException("Not connected to an open session.  Call open() first!");
 
-        JSONObject jsonReport = retrieveReport(listener, session, username, reportFilePath);
+            String reportFilePath = performAnalysis(listener, session, username);
+            listener.getLogger().println(String.format("Retrieved report file path as %s",reportFilePath));
 
-        int criticalVul = processReport(jsonReport);
-        createGlobalEnvironmentVariables(envVar, targetUrl);
-        createGlobalEnvironmentVariables(envVar+"_RESULTS", String.valueOf(criticalVul));
+            JSONObject jsonReport = retrieveReport(listener, session, username, reportFilePath);
+            int criticalVul = processReport(jsonReport);
+            createGlobalEnvironmentVariables(envVar, targetUrl);
+            createGlobalEnvironmentVariables(envVar+"_RESULTS", String.valueOf(criticalVul));
+
+            session.disconnect();
+        } catch (JSchException | SftpException | IOException e) {
+            throw new RuntimeException(e.getMessage());
+        }
 
         return true;
     }
@@ -166,96 +175,79 @@ public class WsapBuilder extends Builder implements SimpleBuildStep,ConsoleSuppo
         }
     }
 
-    public String performAnalysis(BuildListener listener, Session session, String username) throws InterruptedException, IOException {
+    public String performAnalysis(BuildListener listener, Session session, String username) throws JSchException, IOException {
         listener.getLogger().println(String.format("Attempting to ssh as %s:",username));
         String command = String.format("python3 %s/main.py %s",wsapLocation,generateCMD());
         listener.getLogger().println(command);
 
         String report_location = "";
-        try {
-            session.connect();
-            if (!session.isConnected())
-                throw new RuntimeException("Not connected to an open session.  Call open() first!");
 
-            ChannelExec channel = (ChannelExec) session.openChannel("exec");
-            channel.setCommand(command);
-            System.out.println("Connected");
-            channel.setInputStream(null);
-            channel.setErrStream(System.err);
-            InputStream in=channel.getInputStream();
-            channel.connect();
+        ChannelExec channel = (ChannelExec) session.openChannel("exec");
+        channel.setCommand(command);
+        System.out.println("Connected");
+        channel.setInputStream(null);
+        channel.setErrStream(System.err);
+        InputStream in=channel.getInputStream();
+        channel.connect();
 
-            //Display console output
-            byte[] tmp=new byte[1024];
-            while(true){
-                while(in.available()>0){
-                    int i=in.read(tmp, 0, 1024);
-                    if(i<0)break;
-                    String textBlock = new String(tmp, 0, i);
-                    listener.getLogger().println(textBlock);
+        //Display console output
+        byte[] tmp=new byte[1024];
+        while(true){
+            while(in.available()>0){
+                int i=in.read(tmp, 0, 1024);
+                if(i<0)break;
+                String textBlock = new String(tmp, 0, i);
+                listener.getLogger().println(textBlock);
 
-                    String[] lines = textBlock.split("\n");
-                    boolean bufferHasLines = lines.length > 0;
-                    if (bufferHasLines){
-                        report_location = lines[lines.length-1];
-                    }
+                String[] lines = textBlock.split("\n");
+                boolean bufferHasLines = lines.length > 0;
+                if (bufferHasLines){
+                    report_location = lines[lines.length-1];
                 }
-                if(channel.isClosed()){
-                    System.out.println("Current report_location: "+report_location);
-                    listener.getLogger().println("exit-status: "+channel.getExitStatus());
-                    break;
-                }
-                try{Thread.sleep(1000);}catch(Exception ee){}
             }
-
-            channel.disconnect();
-            session.disconnect();
-        } catch (IOException | JSchException e) {
-            throw new RuntimeException(e.getMessage());
+            if(channel.isClosed()){
+                System.out.println("Current report_location: "+report_location);
+                listener.getLogger().println("exit-status: "+channel.getExitStatus());
+                break;
+            }
+            try{Thread.sleep(1000);}catch(Exception ee){}
         }
+        channel.disconnect();
+
         return report_location;
     }
 
-    private JSONObject retrieveReport(BuildListener listener, Session session, String username, String reportFilePath) {
+    private JSONObject retrieveReport(BuildListener listener, Session session, String username, String reportFilePath) throws JSchException, SftpException {
         listener.getLogger().println(String.format("Attempting to ssh as %s:",username));
         listener.getLogger().println("Retrieving vulnerability audit file: "+reportFilePath);
 
         JSONObject jsonReport = new JSONObject();
+
+        Channel channel = session.openChannel("sftp");
+        channel.connect();
+        ChannelSftp sftpChannel = (ChannelSftp) channel;
+
+        InputStream stream = sftpChannel.get(reportFilePath);
         try {
-            session.connect();
-            if (!session.isConnected())
-                throw new RuntimeException("Not connected to an open session.  Call open() first!");
-
-            Channel channel = session.openChannel("sftp");
-            channel.connect();
-            ChannelSftp sftpChannel = (ChannelSftp) channel;
-
-            InputStream stream = sftpChannel.get(reportFilePath);
-            try {
-                StringBuilder sb = new StringBuilder();
-                BufferedReader br = new BufferedReader(new InputStreamReader(stream));
-                String line;
-                while ((line = br.readLine()) != null) {
-                    sb.append(line);
-                }
-                jsonReport = (JSONObject) JSONSerializer.toJSON(sb.toString());
-
-            } catch (IOException io) {
-                System.out.println("Exception occurred during reading file from SFTP server due to " + io.getMessage());
-                io.getMessage();
-
-            } catch (Exception e) {
-                System.out.println("Exception occurred during reading file from SFTP server due to " + e.getMessage());
-                e.getMessage();
-
+            StringBuilder sb = new StringBuilder();
+            BufferedReader br = new BufferedReader(new InputStreamReader(stream));
+            String line;
+            while ((line = br.readLine()) != null) {
+                sb.append(line);
             }
+            jsonReport = (JSONObject) JSONSerializer.toJSON(sb.toString());
 
-            sftpChannel.exit();
-            session.disconnect();
-        } catch (JSchException | SftpException e) {
-            throw new RuntimeException(e.getMessage());
-            //throw new RuntimeException("Error durring SSH command execution. Command: " + command);
+        } catch (IOException io) {
+            System.out.println("Exception occurred during reading file from SFTP server due to " + io.getMessage());
+            io.getMessage();
+
+        } catch (Exception e) {
+            System.out.println("Exception occurred during reading file from SFTP server due to " + e.getMessage());
+            e.getMessage();
+
         }
+        sftpChannel.exit();
+
         return jsonReport;
     }
 
