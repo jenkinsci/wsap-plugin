@@ -91,7 +91,8 @@ public class WsapBuilder extends Builder implements SimpleBuildStep,ConsoleSuppo
 
     @Override
     public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) throws InterruptedException, IOException {
-        StandardUsernameCredentials user = lookupSystemCredentials(credentialId);
+        StandardUsernameCredentials user =  CredentialsProvider
+                .findCredentialById(credentialId, StandardUsernameCredentials.class, build, SSH_SCHEME);
         if (user == null) {
             String message = "Credentials with id '" + credentialId + "', no longer exist!";
             listener.getLogger().println(message);
@@ -250,16 +251,6 @@ public class WsapBuilder extends Builder implements SimpleBuildStep,ConsoleSuppo
 
         return jsonReport;
     }
-
-    public static StandardUsernameCredentials lookupSystemCredentials(String credentialsId) {
-        return CredentialsMatchers.firstOrNull(
-                CredentialsProvider
-                        .lookupCredentials(StandardUsernameCredentials.class, Jenkins.get(), ACL.SYSTEM,
-                                SSH_SCHEME),
-                CredentialsMatchers.withId(credentialsId)
-        );
-    }
-
 
     @Extension
     public static final class DescriptorImpl extends BuildStepDescriptor<Builder> {
