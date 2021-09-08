@@ -2,17 +2,17 @@ package io.jenkinsci.security;
 
 
 import com.cloudbees.jenkins.plugins.sshcredentials.SSHAuthenticator;
-import com.cloudbees.plugins.credentials.CredentialsMatchers;
+import com.cloudbees.jenkins.plugins.sshcredentials.SSHUserPrivateKey;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
+import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
 import com.cloudbees.plugins.credentials.common.StandardUsernameCredentials;
+import com.cloudbees.plugins.credentials.domains.DomainRequirement;
 import com.cloudbees.plugins.credentials.domains.SchemeRequirement;
 import com.jcraft.jsch.*;
 import hudson.EnvVars;
 import hudson.Extension;
 import hudson.Launcher;
-import hudson.model.AbstractBuild;
-import hudson.model.AbstractProject;
-import hudson.model.BuildListener;
+import hudson.model.*;
 import hudson.security.ACL;
 import hudson.slaves.EnvironmentVariablesNodeProperty;
 import hudson.slaves.NodeProperty;
@@ -21,6 +21,7 @@ import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
 import hudson.util.DescribableList;
 import hudson.util.FormValidation;
+import hudson.util.ListBoxModel;
 import hudson.util.StreamTaskListener;
 import io.jenkinsci.security.analysis.DASTAnalysis;
 import io.jenkinsci.security.analysis.SASTAnalysis;
@@ -33,6 +34,7 @@ import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 import net.sf.json.JSONSerializer;
 import org.jenkinsci.plugins.jsch.JSchConnector;
+import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 
@@ -44,6 +46,7 @@ import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.charset.Charset;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Properties;
@@ -54,7 +57,7 @@ public class WsapBuilder extends Builder implements SimpleBuildStep,ConsoleSuppo
     @Setter
     private  String targetUrl;
     @Getter @Setter private String envVar;
-    @Getter @Setter private String credentialId;
+    @Getter @Setter private String credentialsId;
 
     //Scan Properties
     @Getter @Setter private String wsapLocation;
@@ -69,10 +72,10 @@ public class WsapBuilder extends Builder implements SimpleBuildStep,ConsoleSuppo
 
     @DataBoundConstructor
     @SuppressWarnings("unused")
-    public WsapBuilder(String wsapLocation, String envVar, String credentialId, String targetUrl, String ipAddress, int port, String apiKey,  SASTAnalysis sastAnalysis, DASTAnalysis dastAnalysis){
+    public WsapBuilder(String wsapLocation, String envVar, String credentialsId, String targetUrl, String ipAddress, int port, String apiKey, SASTAnalysis sastAnalysis, DASTAnalysis dastAnalysis){
         this.wsapLocation = wsapLocation;
         this.targetUrl = targetUrl;
-        this.credentialId = credentialId;
+        this.credentialsId = credentialsId;
         this.envVar = envVar;
         this.ipAddress = ipAddress;
         this.port = port;
@@ -92,9 +95,9 @@ public class WsapBuilder extends Builder implements SimpleBuildStep,ConsoleSuppo
     @Override
     public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) throws InterruptedException, IOException {
         StandardUsernameCredentials user =  CredentialsProvider
-                .findCredentialById(credentialId, StandardUsernameCredentials.class, build, SSH_SCHEME);
+                .findCredentialById(credentialsId, SSHUserPrivateKey.class, build, SSH_SCHEME);
         if (user == null) {
-            String message = "Credentials with id '" + credentialId + "', no longer exist!";
+            String message = "Credentials with id '" + credentialsId + "', no longer exist!";
             listener.getLogger().println(message);
             throw new InterruptedException(message);
         }
@@ -272,6 +275,16 @@ public class WsapBuilder extends Builder implements SimpleBuildStep,ConsoleSuppo
             SCANNER_IP = "127.0.0.1";
             SCANNER_PORT = "8010";
             super.load();
+        }
+
+        public ListBoxModel doFillCredentialsIdItems(@AncestorInPath ItemGroup context, @QueryParameter String credentialsId) {
+            StandardListBoxModel result = new StandardListBoxModel();
+            return result
+                    .includeEmptyValue()
+                    .includeAs(ACL.SYSTEM, context,
+                            SSHUserPrivateKey.class,
+                            Collections.<DomainRequirement>singletonList(SSH_SCHEME))
+                    .includeCurrentValue(credentialsId);
         }
 
         @Override

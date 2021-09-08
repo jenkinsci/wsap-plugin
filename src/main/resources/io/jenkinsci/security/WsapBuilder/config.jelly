@@ -13,8 +13,8 @@
         <f:textbox default="${descriptor.ENV_VAR}" value="${it.envVar}"/>
     </f:entry>
 
-    <f:entry title="Credentials ID:"  field="credentialId" description="In order to establish a SSH Connection it is required the Credentials ID">
-        <f:textbox default="${descriptor.credentialId}" value="${it.credentialId}"/>
+    <f:entry title="Credentials ID:"  field="credentialsId" description="In order to establish a SSH Connection it is required the Credentials ID">
+        <f:select></f:select>
     </f:entry>
 
     <f:section title="Scanner Properties" >
