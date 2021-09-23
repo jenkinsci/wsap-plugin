@@ -137,7 +137,7 @@ public class WsapBuilder extends Builder implements SimpleBuildStep,ConsoleSuppo
         return true;
     }
     private int processReport(JSONObject jsonReport) {
-        int criticalVul = 0;
+        int highVul = 0;
         Iterator<String> keys = (Iterator<String>) jsonReport.keys();
         while (keys.hasNext()) {
             String key = keys.next();
@@ -147,12 +147,12 @@ public class WsapBuilder extends Builder implements SimpleBuildStep,ConsoleSuppo
             String level = levels.next();
 
             JSONArray vulnerabilities = value.getJSONArray(level);
-            criticalVul += vulnerabilities.size();
-            System.out.println(String.format("Found %s critical vulnerabilities with %s", key, vulnerabilities.size()));
+            highVul += vulnerabilities.size();
+            System.out.println(String.format("Found %s high vulnerabilities with %s", key, vulnerabilities.size()));
             System.out.println(key);
         }
-        System.out.println("Critical Vulnerabilities found: "+criticalVul);
-        return criticalVul;
+        System.out.println("High Vulnerabilities found: "+highVul);
+        return highVul;
     }
 
     public void createGlobalEnvironmentVariables(String key, String value){
