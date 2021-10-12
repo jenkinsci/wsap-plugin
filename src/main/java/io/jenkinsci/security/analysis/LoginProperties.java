@@ -128,7 +128,7 @@ public class LoginProperties extends Entry implements ConsoleSupport {
          * Used in order to add multiple user credentials
          * @return
          */
-        public List<Descriptor> getHeaderDescriptors() {
+        public List<Descriptor> getHeadersDescriptors() {
             Jenkins jenkins=Jenkins.getInstanceOrNull();
             return ImmutableList.of(jenkins.getDescriptor(HeaderEntry.class));
         }

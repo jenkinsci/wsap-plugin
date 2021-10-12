@@ -21,6 +21,14 @@
             <f:textbox default="${descriptor.LOGGED_OUT_REGGEX}" value="${it.loggedOutRegex}"/>
         </f:entry>-->
 
+        <f:entry field="headers">
+            <f:hetero-list name="headers"
+                           hasHeader="true"
+                           descriptors="${descriptor.getHeadersDescriptors()}"
+                           items="${instance.headers}"
+                           addCaption="${%Add Login Header}"/>
+        </f:entry>
+
         <f:entry field="users">
             <f:hetero-list name="users"
                            hasHeader="true"

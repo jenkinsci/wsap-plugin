@@ -12,16 +12,21 @@ import org.kohsuke.stapler.DataBoundConstructor;
 public class HeaderEntry extends Entry implements ConsoleSupport {
     @Getter @Setter
     private String header;
+    @Getter @Setter
+    private String value;
+
 
     @DataBoundConstructor
-    public HeaderEntry(String header) {
+    public HeaderEntry(String header, String value) {
         this.header = header;
+        this.value = value;
     }
 
     @Override
     public JSONObject generateJSON() {
         JSONObject json = new JSONObject();
         json.put("header", header);
+        json.put("value", value);
         return json;
     }
 

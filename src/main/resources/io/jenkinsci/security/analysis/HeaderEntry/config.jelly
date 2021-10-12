@@ -1,5 +1,8 @@
 <j:jelly xmlns:j="jelly:core" xmlns:f="/lib/form">
-    <f:entry title="Header:" field="header">
+    <f:entry title="Header Tag:" field="header" description="Custom header tag that will be insert when performing the login request">
+        <f:textbox/>
+    </f:entry>
+    <f:entry title="Header Value:" field="value" description="Custom header value that will be used">
         <f:textbox/>
     </f:entry>
 </j:jelly>
