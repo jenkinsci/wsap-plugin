@@ -45,22 +45,22 @@ public class ScanMethod extends Entry implements ConsoleSupport {
     }
 
     @Override
-    public String generateCMD() {
-        String cmd ="";
+    public JSONObject generateJSON() {
+        JSONObject json = new JSONObject();
         switch (scan.toUpperCase()){
             case "FULL":
-                cmd += "--scan.mode FULL ";
-                cmd += String.format("--scan.apiUrl %s --scan.apiDefinition %s ", apiUrl, apiDefinition);
+                json.put("scan.mode", "FULL");
+                json.put("scan.apiUrl", apiUrl);
+                json.put("scan.apiDefinition", apiDefinition);
                 break;
             case "TRADITIONAL":
-                cmd += "--scan.mode TRADITIONAL ";
+                json.put("scan.mode", "TRADITIONAL");
                 break;
             case "AJAX":
-                cmd += "--scan.mode AJAX ";
+                json.put("scan.mode", "AJAX");
                 break;
         }
-
-        return cmd;
+        return json;
     }
 
     @Extension

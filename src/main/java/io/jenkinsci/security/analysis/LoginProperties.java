@@ -8,8 +8,9 @@ import io.jenkinsci.security.Entry;
 import jenkins.model.Jenkins;
 import lombok.Getter;
 import lombok.Setter;
+import net.sf.json.JSONArray;
+import net.sf.json.JSONObject;
 import org.kohsuke.stapler.DataBoundConstructor;
-import org.json.JSONObject;
 import org.kohsuke.stapler.StaplerRequest;
 
 import java.util.ArrayList;
@@ -32,11 +33,13 @@ public class LoginProperties extends Entry implements ConsoleSupport {
     @Getter @Setter
     private String loggedOutRegex;
     @Getter @Setter
+    private List<Entry> headers;
+    @Getter @Setter
     private List<Entry> users;
 
     @DataBoundConstructor
     public LoginProperties(Boolean useLogin, String loginUrl, String requestJson, String usernameField, String passwordField,
-                           String loggedInRegex, String loggedOutRegex, List<Entry> users){
+                           String loggedInRegex, String loggedOutRegex, List<Entry> headers, List<Entry> users){
         this.useLogin = useLogin;
         this.loginUrl = loginUrl;
         this.requestJson = requestJson;
@@ -44,6 +47,7 @@ public class LoginProperties extends Entry implements ConsoleSupport {
         this.passwordField = passwordField;
         this.loggedInRegex = loggedInRegex;
         this.loggedOutRegex = loggedOutRegex;
+        this.headers = headers != null ? new ArrayList<>(headers) : Collections.emptyList();
         this.users = users != null ? new ArrayList<>(users) : Collections.emptyList();
     }
 
@@ -52,25 +56,32 @@ public class LoginProperties extends Entry implements ConsoleSupport {
     }
 
     @Override
-    public String generateCMD() {
-        String cmd = String.format(
-                "--login.url %s --login.request %s --login.userField %s --login.passField %s ",
-                this.loginUrl,
-                JSONObject.quote(this.requestJson.replaceAll("\\s+","")),
-                this.usernameField,
-                this.passwordField
-        );
+    public JSONObject generateJSON() {
+        JSONObject json = new JSONObject();
+        json.put("login.url",this.loginUrl);
+        json.put("login.request",requestJson.replaceAll("\\s+",""));
+        json.put("login.userField",this.usernameField);
+        json.put("login.passField",this.passwordField);
+
+        JSONArray headersList = new JSONArray();
+        for (Entry entry: headers) {
+            headersList.add(entry.generateJSON());
+        }
+        json.put("login.headers",headersList);
+
+        JSONArray usersList = new JSONArray();
+        for (Entry entry: users) {
+            usersList.add(entry.generateJSON());
+        }
+        json.put("users",usersList);
+
         /*if (loggedInRegex !=null && !loggedInRegex.isEmpty()){
             cmd+= String.format("--login.loggedInRegex %s ",loggedInRegex);
         }
         if (loggedOutRegex !=null && !loggedOutRegex.isEmpty()){
             cmd+= String.format("--login.loggedOutRegex %s ",loggedOutRegex);
         }*/
-
-        for (Entry entry: users) {
-            cmd+=entry.generateCMD();
-        }
-        return cmd;
+        return json;
     }
 
     @Extension
@@ -110,6 +121,16 @@ public class LoginProperties extends Entry implements ConsoleSupport {
             jsonObject.put("password","password");
 
             return jsonObject.toString(4);
+        }
+
+        /**
+         * Return a describer a list of Child Descriptors
+         * Used in order to add multiple user credentials
+         * @return
+         */
+        public List<Descriptor> getHeaderDescriptors() {
+            Jenkins jenkins=Jenkins.getInstanceOrNull();
+            return ImmutableList.of(jenkins.getDescriptor(HeaderEntry.class));
         }
 
         /**

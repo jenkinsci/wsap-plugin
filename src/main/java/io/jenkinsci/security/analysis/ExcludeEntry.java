@@ -6,6 +6,7 @@ import io.jenkinsci.security.ConsoleSupport;
 import io.jenkinsci.security.Entry;
 import lombok.Getter;
 import lombok.Setter;
+import net.sf.json.JSONObject;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 public class ExcludeEntry extends Entry implements ConsoleSupport {
@@ -18,8 +19,11 @@ public class ExcludeEntry extends Entry implements ConsoleSupport {
     }
 
     @Override
-    public String generateCMD() {
-        return String.format("--exclude.url  %s ", url);
+    public JSONObject generateJSON() {
+        JSONObject json = new JSONObject();
+        json.put("exclude.url", url);
+        return json;
+
     }
 
     @Extension

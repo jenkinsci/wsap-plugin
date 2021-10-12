@@ -8,6 +8,8 @@ import io.jenkinsci.security.Entry;
 import jenkins.model.Jenkins;
 import lombok.Getter;
 import lombok.Setter;
+import net.sf.json.JSONArray;
+import net.sf.json.JSONObject;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import java.util.ArrayList;
@@ -32,25 +34,28 @@ public class DASTAnalysis extends Entry implements ConsoleSupport {
     }
 
     @Override
-    public String generateCMD() {
-        String cmd = "";
-
+    public JSONObject generateJSON() {
+        JSONObject json = new JSONObject();
         if (includeUrls != null){
+            JSONArray includes = new JSONArray();
             for (Entry entry: includeUrls) {
-                cmd+=entry.generateCMD();
+                includes.add(entry.generateJSON());
             }
+            json.put("includes", includes);
         }
         if (excludeUrls != null) {
+            JSONArray excludes = new JSONArray();
             for (Entry entry : excludeUrls) {
-                cmd += entry.generateCMD();
+                excludes.add(entry.generateJSON());
             }
+            json.put("excludes", excludes);
         }
-        cmd += scanMethod.generateCMD();
+        json.put("scan.properties",scanMethod.generateJSON());
 
         if (loginProperties !=null){
-            cmd += loginProperties.generateCMD();
+            json.put("loginProperties", loginProperties.generateJSON());
         }
-        return cmd;
+        return json;
     }
 
     @Extension

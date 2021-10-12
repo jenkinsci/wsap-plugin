@@ -6,6 +6,7 @@ import io.jenkinsci.security.ConsoleSupport;
 import io.jenkinsci.security.Entry;
 import lombok.Getter;
 import lombok.Setter;
+import net.sf.json.JSONObject;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 public class UserEntry extends Entry implements ConsoleSupport {
@@ -21,8 +22,11 @@ public class UserEntry extends Entry implements ConsoleSupport {
     }
 
     @Override
-    public String generateCMD() {
-        return String.format("--login.user \"%s\" \"%s\" ", username, password);
+    public JSONObject generateJSON() {
+        JSONObject json = new JSONObject();
+        json.put("username",username);
+        json.put("password",password);
+        return json;
     }
 
     @Extension

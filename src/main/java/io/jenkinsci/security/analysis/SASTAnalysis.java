@@ -18,9 +18,10 @@ public class SASTAnalysis extends Entry implements ConsoleSupport {
         this.target = target;
     }
 
-    public String generateCMD() {
-        String cmd = String.format("--target %s ",target);
-        return cmd;
+    public JSONObject generateJSON() {
+        JSONObject json = new JSONObject();
+        json.put("target", target);
+        return json;
     }
 
     @Extension

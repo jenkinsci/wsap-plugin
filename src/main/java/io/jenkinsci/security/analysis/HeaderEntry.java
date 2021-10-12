@@ -9,25 +9,25 @@ import lombok.Setter;
 import net.sf.json.JSONObject;
 import org.kohsuke.stapler.DataBoundConstructor;
 
-public class IncludeEntry extends Entry implements ConsoleSupport {
+public class HeaderEntry extends Entry implements ConsoleSupport {
     @Getter @Setter
-    private String url;
+    private String header;
 
     @DataBoundConstructor
-    public IncludeEntry(String url) {
-        this.url = url;
+    public HeaderEntry(String header) {
+        this.header = header;
     }
 
     @Override
     public JSONObject generateJSON() {
         JSONObject json = new JSONObject();
-        json.put("include.url", url);
+        json.put("header", header);
         return json;
     }
 
     @Extension
     public static class DescriptorImpl extends Descriptor<Entry> {
-        @Override public String getDisplayName() { return "Include Url"; }
+        @Override public String getDisplayName() { return "Include Header"; }
     }
 }
 

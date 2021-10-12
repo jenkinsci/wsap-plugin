@@ -38,18 +38,14 @@ import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.net.MalformedURLException;
-import java.net.URISyntaxException;
-import java.net.URL;
+import java.io.*;
+import java.net.*;
 import java.nio.charset.Charset;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Properties;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
+
+import static io.jenkinsci.security.Utils.isJSONValid;
+
 
 public class WsapBuilder extends Builder implements SimpleBuildStep,ConsoleSupport {
     private final int SSH_PORT = 22;
@@ -84,15 +80,17 @@ public class WsapBuilder extends Builder implements SimpleBuildStep,ConsoleSuppo
     }
 
     @Override
-    public String generateCMD(){
-        String cmd = String.format("--target.url %s ",targetUrl);
-        cmd += String.format("--scanner.ip %s --scanner.port %s ",ipAddress,port);
-        cmd += sastAnalysis.generateCMD();
-        cmd += dastAnalysis.generateCMD();
-        return cmd;
+    public JSONObject generateJSON(){
+        JSONObject json = new JSONObject();
+        json.put("target.url", targetUrl);
+        json.put("scanner.ip", ipAddress);
+        json.put("scanner.port", port);
+        json.put("sastAnalysis", sastAnalysis.generateJSON());
+        json.put("dastAnalysis", dastAnalysis.generateJSON());
+        return json;
     }
 
-    @Override
+    /*@Override
     public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) throws InterruptedException, IOException {
         StandardUsernameCredentials user =  CredentialsProvider
                 .findCredentialById(credentialsId, SSHUserPrivateKey.class, build, SSH_SCHEME);
@@ -135,7 +133,7 @@ public class WsapBuilder extends Builder implements SimpleBuildStep,ConsoleSuppo
         }
 
         return true;
-    }
+    }*/
     private int processReport(JSONObject jsonReport) {
         int highVul = 0;
         Iterator<String> keys = (Iterator<String>) jsonReport.keys();
@@ -179,9 +177,123 @@ public class WsapBuilder extends Builder implements SimpleBuildStep,ConsoleSuppo
         }
     }
 
-    public String performAnalysis(BuildListener listener, Session session, String username) throws JSchException, IOException {
+    @Override
+    public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) throws InterruptedException, IOException {
+        //Retrieve valid username
+        StandardUsernameCredentials user =  CredentialsProvider
+                .findCredentialById(credentialsId, SSHUserPrivateKey.class, build, SSH_SCHEME);
+        if (user == null) {
+            String message = "Credentials with id '" + credentialsId + "', no longer exist!";
+            listener.getLogger().println(message);
+            throw new InterruptedException(message);
+        }
+        String username = user.getUsername();
+
+        //Create SSH Session
+        final JSchConnector connector = new JSchConnector(username, ipAddress, SSH_PORT);
+        listener.getLogger().println("Successfully created Connector");
+
+        final SSHAuthenticator<JSchConnector, StandardUsernameCredentials> authenticator = SSHAuthenticator
+                .newInstance(connector, user);
+        authenticator.authenticate(new StreamTaskListener(listener.getLogger(), Charset.defaultCharset()));
+        final Session session = connector.getSession();
+
+        final Properties config = new Properties();
+        config.put("StrictHostKeyChecking", "no");
+        config.put("PreferredAuthentications", "publickey");
+        session.setConfig(config);
+
+        //Connect
+        try {
+            session.connect();
+            if (!session.isConnected())
+                throw new JSchException("Not connected to an open session");
+
+            //Actions
+            launchWASPServer(listener, session, username);
+            try {
+                listener.getLogger().println("Waiting for server to be available");
+                Thread.sleep(10000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            sendingWSAPParams(listener);
+
+        } catch (JSchException e) {
+           throw new InterruptedException(e.getMessage());
+        }
+
+        return true;
+    }
+
+    public void launchWASPServer(BuildListener listener, Session session, String username) throws JSchException {
+        listener.getLogger().println(String.format("Attempting to ssh as: %s",username));
+        String command = String.format("python3 %s/main.py --server %s",wsapLocation,9999);
+        listener.getLogger().println(command);
+
+        ChannelExec channel = (ChannelExec) session.openChannel("exec");
+        channel.setPty(true);
+        channel.setCommand(command);
+        channel.setInputStream(null);
+        channel.setErrStream(System.err);
+
+        //Creating channel
+        channel.connect();
+        listener.getLogger().println("WASP instance was successfully initialized");
+
+        //Closing channel
+        channel.disconnect();
+    }
+
+    public void sendingWSAPParams(BuildListener listener) throws IOException, JSchException {
+        listener.getLogger().println("Trying to connect on ip: " + ipAddress + ":" + 9999);
+        Socket s = new Socket(ipAddress, 9999);
+        listener.getLogger().println("Connected");
+        JSONObject sendData = generateJSON();
+
+        try {
+            listener.getLogger().println("Waiting for server to be available");
+            Thread.sleep(10000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        //Sending form data
+        listener.getLogger().println("Sending defined parameters to WSAP instance");
+        OutputStreamWriter out = new OutputStreamWriter(s.getOutputStream(), StandardCharsets.UTF_8);
+        out.write(sendData.toString());
+        out.flush();
+
+        listener.getLogger().println("Waiting for server response... May take a few hours");
+        String message = null;
+        DataInputStream in = new DataInputStream(s.getInputStream());
+        BufferedReader br = new BufferedReader(new InputStreamReader(s.getInputStream()));
+
+        boolean interrupted = false;
+        while(!interrupted) {
+            while (in.available()>0) {
+                message = br.readLine();
+            }
+            if (Utils.isJSONValid(message)){
+                interrupted = true;
+            }
+        }
+        s.close();
+
+        JSONObject jsonObject = JSONObject.fromObject(message);
+        boolean hasError = jsonObject.get("error") != null;
+        if (hasError) {
+            throw new IOException(jsonObject.get("error").toString());
+        } else {
+            listener.getLogger().println("What?!? No error found?!?");
+        }
+
+    }
+
+
+        public String performAnalysis(BuildListener listener, Session session, String username) throws JSchException, IOException {
         listener.getLogger().println(String.format("Attempting to ssh as %s:",username));
-        String command = String.format("python3 %s/main.py %s",wsapLocation,generateCMD());
+        String command = String.format("python3 %s/main.py %s",wsapLocation, generateJSON());
         listener.getLogger().println(command);
 
         String report_location = "";
