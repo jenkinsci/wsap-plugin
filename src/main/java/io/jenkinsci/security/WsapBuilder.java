@@ -209,7 +209,7 @@ public class WsapBuilder extends Builder implements SimpleBuildStep,ConsoleSuppo
             if (!session.isConnected())
                 throw new JSchException("Not connected to an open session");
 
-            //Actions
+            //Launch WSAP instance
             launchWASPServer(listener, session, username);
             try {
                 listener.getLogger().println("Waiting for server to be available");
@@ -217,13 +217,43 @@ public class WsapBuilder extends Builder implements SimpleBuildStep,ConsoleSuppo
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-            sendingWSAPParams(listener);
+
+            //Sends data by TCP Connection
+            JSONObject vulnerabilityAudit = sendingWSAPParams(listener);
+            if (vulnerabilityAudit != null){
+                //Stores the highest criticality vulnerabilities in Jenkins by scanner
+                generateCriticalEnvVariables(listener, vulnerabilityAudit);
+            }
 
         } catch (JSchException e) {
            throw new InterruptedException(e.getMessage());
         }
 
         return true;
+    }
+
+    private void generateCriticalEnvVariables(BuildListener listener, JSONObject vulnerabilityAudit) {
+        createGlobalEnvironmentVariables(envVar.toUpperCase(), targetUrl);
+        listener.getLogger().println(String.format("Created variable %s with the targetUrl",envVar.toUpperCase()));
+
+        //Iterates through all tools names
+        Iterator<String> keys = (Iterator<String>) vulnerabilityAudit.keys();
+        while (keys.hasNext()) {
+            String key = keys.next();
+
+            //Gets an object with all security levels (High, Medium, Low, Info)
+            JSONObject value = vulnerabilityAudit.getJSONObject(key);
+
+            //Gets only the first security level (High)
+            Iterator<String> levels = (Iterator<String>) value.keys();
+            String level = levels.next();
+            String vulnerabilities = value.getString(level);
+
+            //Creates variable
+            String jenkinsVar = envVar+key;
+            createGlobalEnvironmentVariables(jenkinsVar.toUpperCase(), vulnerabilities);
+            listener.getLogger().println(String.format("Created variable %s with the amount of critical vulnerabilities found",jenkinsVar.toUpperCase()));
+        }
     }
 
     public void launchWASPServer(BuildListener listener, Session session, String username) throws JSchException {
@@ -245,7 +275,9 @@ public class WsapBuilder extends Builder implements SimpleBuildStep,ConsoleSuppo
         channel.disconnect();
     }
 
-    public void sendingWSAPParams(BuildListener listener) throws IOException, JSchException {
+    public JSONObject sendingWSAPParams(BuildListener listener) throws IOException, JSchException {
+        JSONObject vulnerabilityAudit = null;
+
         listener.getLogger().println("Trying to connect on ip: " + ipAddress + ":" + 9999);
         Socket socket = new Socket(ipAddress, 9999);
         DataInputStream in = new DataInputStream(socket.getInputStream());
@@ -263,7 +295,7 @@ public class WsapBuilder extends Builder implements SimpleBuildStep,ConsoleSuppo
 
         //Receiving feedback
         listener.getLogger().println("Waiting for server response... May take a few hours");
-        
+
         StringBuffer buffer = new StringBuffer();
         boolean interrupted = false;
         while(!interrupted) {
@@ -280,6 +312,7 @@ public class WsapBuilder extends Builder implements SimpleBuildStep,ConsoleSuppo
                         throw new IOException(jsonObject.get("error").toString());
                     } else {
                         listener.getLogger().println(buffer);
+                        vulnerabilityAudit = jsonObject;
                     }
                 }
                 buffer.setLength(0);
@@ -288,25 +321,9 @@ public class WsapBuilder extends Builder implements SimpleBuildStep,ConsoleSuppo
 
         br.close();
         in.close();
-
-        /*while(!interrupted) {
-
-            while (in.available()>0) {
-                message = br.readLine();
-            }
-
-            if (Utils.isJSONValid(message)) {
-                interrupted = true;
-                JSONObject jsonObject = JSONObject.fromObject(message);
-                boolean hasError = jsonObject.get("error") != null;
-                if (hasError) {
-                    throw new IOException(jsonObject.get("error").toString());
-                } else {
-                    listener.getLogger().println("What?!? No error found?!?");
-                }
-            }
-        }*/
         socket.close();
+
+        return vulnerabilityAudit;
     }
 
     public String performAnalysis(BuildListener listener, Session session, String username) throws JSchException, IOException {
