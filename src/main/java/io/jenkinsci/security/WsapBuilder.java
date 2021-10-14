@@ -263,32 +263,29 @@ public class WsapBuilder extends Builder implements SimpleBuildStep,ConsoleSuppo
 
         //Receiving feedback
         listener.getLogger().println("Waiting for server response... May take a few hours");
-
-        boolean interrupted = false;
+        
         StringBuffer buffer = new StringBuffer();
+        boolean interrupted = false;
         while(!interrupted) {
-            while (in.available() != 0) {
-                int ch = br.read();
-                if(ch == -1) { break; }
-                buffer.append((char) ch);
+            int ch = br.read();
+            buffer.append((char) ch);
 
-                if (Utils.isJSONValid(buffer.toString())) {
-                    JSONObject jsonObject = JSONObject.fromObject(buffer.toString());
-                    if (jsonObject.containsKey("info")) {
-                        listener.getLogger().println(jsonObject.get("info") + "\n");
+            if (Utils.isJSONValid(buffer.toString())) {
+                JSONObject jsonObject = JSONObject.fromObject(buffer.toString());
+                if (jsonObject.containsKey("info")) {
+                    listener.getLogger().println(jsonObject.get("info"));
+                } else {
+                    interrupted = true;
+                    if (jsonObject.containsKey("error")) {
+                        throw new IOException(jsonObject.get("error").toString());
                     } else {
-                        interrupted = true;
-                        if (jsonObject.containsKey("error")) {
-                            throw new IOException(jsonObject.get("error").toString());
-                        } else {
-                            listener.getLogger().println(buffer.toString() + "\n");
-                        }
-
+                        listener.getLogger().println(buffer);
                     }
                 }
+                buffer.setLength(0);
             }
-
         }
+
         br.close();
         in.close();
 
