@@ -213,7 +213,7 @@ public class WsapBuilder extends Builder implements SimpleBuildStep,ConsoleSuppo
             launchWASPServer(listener, session, username);
             try {
                 listener.getLogger().println("Waiting for server to be available");
-                Thread.sleep(10000);
+                Thread.sleep(20000);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
@@ -247,51 +247,72 @@ public class WsapBuilder extends Builder implements SimpleBuildStep,ConsoleSuppo
 
     public void sendingWSAPParams(BuildListener listener) throws IOException, JSchException {
         listener.getLogger().println("Trying to connect on ip: " + ipAddress + ":" + 9999);
-        Socket s = new Socket(ipAddress, 9999);
-        listener.getLogger().println("Connected");
-        JSONObject sendData = generateJSON();
+        Socket socket = new Socket(ipAddress, 9999);
+        DataInputStream in = new DataInputStream(socket.getInputStream());
+        BufferedReader br = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
-        try {
-            listener.getLogger().println("Waiting for server to be available");
-            Thread.sleep(10000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+        //DataInputStream in = new DataInputStream(s.getInputStream());
+        listener.getLogger().println("Connected");
 
         //Sending form data
+        JSONObject sendData = generateJSON();
         listener.getLogger().println("Sending defined parameters to WSAP instance");
-        OutputStreamWriter out = new OutputStreamWriter(s.getOutputStream(), StandardCharsets.UTF_8);
+        OutputStreamWriter out = new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8);
         out.write(sendData.toString());
         out.flush();
 
+        //Receiving feedback
         listener.getLogger().println("Waiting for server response... May take a few hours");
-        String message = null;
-        DataInputStream in = new DataInputStream(s.getInputStream());
-        BufferedReader br = new BufferedReader(new InputStreamReader(s.getInputStream()));
 
         boolean interrupted = false;
+        StringBuffer buffer = new StringBuffer();
         while(!interrupted) {
+            while (in.available() != 0) {
+                int ch = br.read();
+                if(ch == -1) { break; }
+                buffer.append((char) ch);
+
+                if (Utils.isJSONValid(buffer.toString())) {
+                    JSONObject jsonObject = JSONObject.fromObject(buffer.toString());
+                    if (jsonObject.containsKey("info")) {
+                        listener.getLogger().println(jsonObject.get("info") + "\n");
+                    } else {
+                        interrupted = true;
+                        if (jsonObject.containsKey("error")) {
+                            throw new IOException(jsonObject.get("error").toString());
+                        } else {
+                            listener.getLogger().println(buffer.toString() + "\n");
+                        }
+
+                    }
+                }
+            }
+
+        }
+        br.close();
+        in.close();
+
+        /*while(!interrupted) {
+
             while (in.available()>0) {
                 message = br.readLine();
             }
-            if (Utils.isJSONValid(message)){
+
+            if (Utils.isJSONValid(message)) {
                 interrupted = true;
+                JSONObject jsonObject = JSONObject.fromObject(message);
+                boolean hasError = jsonObject.get("error") != null;
+                if (hasError) {
+                    throw new IOException(jsonObject.get("error").toString());
+                } else {
+                    listener.getLogger().println("What?!? No error found?!?");
+                }
             }
-        }
-        s.close();
-
-        JSONObject jsonObject = JSONObject.fromObject(message);
-        boolean hasError = jsonObject.get("error") != null;
-        if (hasError) {
-            throw new IOException(jsonObject.get("error").toString());
-        } else {
-            listener.getLogger().println("What?!? No error found?!?");
-        }
-
+        }*/
+        socket.close();
     }
 
-
-        public String performAnalysis(BuildListener listener, Session session, String username) throws JSchException, IOException {
+    public String performAnalysis(BuildListener listener, Session session, String username) throws JSchException, IOException {
         listener.getLogger().println(String.format("Attempting to ssh as %s:",username));
         String command = String.format("python3 %s/main.py %s",wsapLocation, generateJSON());
         listener.getLogger().println(command);
