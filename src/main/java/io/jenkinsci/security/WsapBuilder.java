@@ -90,69 +90,6 @@ public class WsapBuilder extends Builder implements SimpleBuildStep,ConsoleSuppo
         return json;
     }
 
-    /*@Override
-    public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) throws InterruptedException, IOException {
-        StandardUsernameCredentials user =  CredentialsProvider
-                .findCredentialById(credentialsId, SSHUserPrivateKey.class, build, SSH_SCHEME);
-        if (user == null) {
-            String message = "Credentials with id '" + credentialsId + "', no longer exist!";
-            listener.getLogger().println(message);
-            throw new InterruptedException(message);
-        }
-
-        String username = user.getUsername();
-        final JSchConnector connector = new JSchConnector(username, ipAddress, SSH_PORT);
-        listener.getLogger().println("Successfully created Connector");
-
-        final SSHAuthenticator<JSchConnector, StandardUsernameCredentials> authenticator = SSHAuthenticator
-                .newInstance(connector, user);
-        authenticator.authenticate(new StreamTaskListener(listener.getLogger(), Charset.defaultCharset()));
-
-        final Session session = connector.getSession();
-        final Properties config = new Properties();
-        config.put("StrictHostKeyChecking", "no");
-        config.put("PreferredAuthentications", "publickey");
-        session.setConfig(config);
-
-        try {
-            session.connect();
-            if (!session.isConnected())
-                throw new RuntimeException("Not connected to an open session.  Call open() first!");
-
-            String reportFilePath = performAnalysis(listener, session, username);
-            listener.getLogger().println(String.format("Retrieved report file path as %s",reportFilePath));
-
-            JSONObject jsonReport = retrieveReport(listener, session, username, reportFilePath);
-            int criticalVul = processReport(jsonReport);
-            createGlobalEnvironmentVariables(envVar, targetUrl);
-            createGlobalEnvironmentVariables(envVar+"_RESULTS", String.valueOf(criticalVul));
-
-            session.disconnect();
-        } catch (JSchException | SftpException | IOException e) {
-            throw new RuntimeException(e.getMessage());
-        }
-
-        return true;
-    }*/
-    private int processReport(JSONObject jsonReport) {
-        int highVul = 0;
-        Iterator<String> keys = (Iterator<String>) jsonReport.keys();
-        while (keys.hasNext()) {
-            String key = keys.next();
-            JSONObject value = jsonReport.getJSONObject(key);
-
-            Iterator<String> levels = (Iterator<String>) value.keys();
-            String level = levels.next();
-
-            JSONArray vulnerabilities = value.getJSONArray(level);
-            highVul += vulnerabilities.size();
-            System.out.println(String.format("Found %s high vulnerabilities with %s", key, vulnerabilities.size()));
-            System.out.println(key);
-        }
-        System.out.println("High Vulnerabilities found: "+highVul);
-        return highVul;
-    }
-
     public void createGlobalEnvironmentVariables(String key, String value){
         Jenkins instance = Jenkins.getInstanceOrNull();
         try {
@@ -246,13 +183,21 @@ public class WsapBuilder extends Builder implements SimpleBuildStep,ConsoleSuppo
 
             //Gets only the first security level (High)
             Iterator<String> levels = (Iterator<String>) value.keys();
-            String level = levels.next();
-            String vulnerabilities = value.getString(level);
+            String jenkinsVar = envVar+"_"+key;
 
-            //Creates variable
-            String jenkinsVar = envVar+key;
-            createGlobalEnvironmentVariables(jenkinsVar.toUpperCase(), vulnerabilities);
-            listener.getLogger().println(String.format("Created variable %s with the amount of critical vulnerabilities found",jenkinsVar.toUpperCase()));
+            if (levels.hasNext()){
+                //Creates venv var containing the vulnerabilities present in High
+                String level = levels.next();
+                String vulnerabilities = value.getString(level);
+
+                //Adds var to jenkins variable
+                createGlobalEnvironmentVariables(jenkinsVar.toUpperCase(), vulnerabilities);
+                listener.getLogger().println(String.format("Created variable %s with the amount of critical vulnerabilities found",jenkinsVar.toUpperCase()));
+            }else{
+                createGlobalEnvironmentVariables(jenkinsVar.toUpperCase(), "No data");
+                listener.getLogger().println(String.format("Created variable %s, but no report was found",jenkinsVar.toUpperCase()));
+            }
+
         }
     }
 
@@ -311,7 +256,6 @@ public class WsapBuilder extends Builder implements SimpleBuildStep,ConsoleSuppo
                     if (jsonObject.containsKey("error")) {
                         throw new IOException(jsonObject.get("error").toString());
                     } else {
-                        listener.getLogger().println(buffer);
                         vulnerabilityAudit = jsonObject;
                     }
                 }
@@ -322,6 +266,23 @@ public class WsapBuilder extends Builder implements SimpleBuildStep,ConsoleSuppo
         br.close();
         in.close();
         socket.close();
+
+        //Process json report and present it
+        Iterator<String> tools = (Iterator<String>) vulnerabilityAudit.keys();
+        while (tools.hasNext()) {
+            String tool = tools.next();
+            listener.getLogger().println("\n"+tool);
+
+            //Gets an object with all security levels (High, Medium, Low, Info)
+            JSONObject securityLevels = vulnerabilityAudit.getJSONObject(tool);
+            Iterator<String> levelsKeys = (Iterator<String>) securityLevels.keys();
+            if (!levelsKeys.hasNext()) listener.getLogger().println(String.format("- No report found"));
+            while (levelsKeys.hasNext()) {
+                String level = levelsKeys.next();
+                String value = String.valueOf(securityLevels.get(level));
+                listener.getLogger().println(String.format("- %s [%s]",level, value));
+            }
+        }
 
         return vulnerabilityAudit;
     }
