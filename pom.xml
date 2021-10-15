@@ -11,10 +11,10 @@
     <groupId>io.jenkinsci.security</groupId>
     <artifactId>wsap</artifactId>
     <name>Web Security Application Project (WSAP)</name>
-    <version>1.0</version>
+    <version>${revision}${changelist}</version>
     <packaging>hpi</packaging>
     <properties>
-        <revision>1.0</revision>
+        <revision>1.1</revision>
         <changelist>-SNAPSHOT</changelist>
         <!-- Baseline Jenkins version you use to build the plugin. Users must have this version or newer to run. -->
         <jenkins.version>2.289</jenkins.version>
@@ -98,7 +98,7 @@
         <connection>scm:git:git://github.com/${gitHubRepo}.git</connection>
         <developerConnection>scm:git:git@github.com:${gitHubRepo}.git</developerConnection>
         <url>https://github.com/${gitHubRepo}</url>
-        <tag>wsap-1.0</tag>
+        <tag>${scmTag}</tag>
     </scm>
 
     <repositories>
