@@ -48,10 +48,9 @@ import static io.jenkinsci.security.Utils.isJSONValid;
 
 
 public class WsapBuilder extends Builder implements SimpleBuildStep,ConsoleSupport {
-    private final int SSH_PORT = 22;
-    @Getter
-    @Setter
-    private  String targetUrl;
+    private static final int SSH_PORT = 22;
+
+    @Getter @Setter private String targetUrl;
     @Getter @Setter private String envVar;
     @Getter @Setter private String credentialsId;
 
@@ -90,28 +89,28 @@ public class WsapBuilder extends Builder implements SimpleBuildStep,ConsoleSuppo
         return json;
     }
 
-    public void createGlobalEnvironmentVariables(String key, String value){
+    public void createGlobalEnvironmentVariables(String key, String value) throws IOException {
         Jenkins instance = Jenkins.getInstanceOrNull();
-        try {
-            DescribableList<NodeProperty<?>, NodePropertyDescriptor> globalNodeProperties = instance.getGlobalNodeProperties();
-            List<EnvironmentVariablesNodeProperty> envVarsNodePropertyList = globalNodeProperties.getAll(EnvironmentVariablesNodeProperty.class);
+        if (instance == null) throw new IOException("Unable to load Jenkins instance");
 
-            EnvironmentVariablesNodeProperty newEnvVarsNodeProperty = null;
-            EnvVars envVars = null;
+        DescribableList<NodeProperty<?>, NodePropertyDescriptor> globalNodeProperties = instance.getGlobalNodeProperties();
+        if (globalNodeProperties == null) throw new IOException("Unable to load global node properties");
 
-            if ( envVarsNodePropertyList == null || envVarsNodePropertyList.size() == 0 ) {
-                newEnvVarsNodeProperty = new hudson.slaves.EnvironmentVariablesNodeProperty();
-                globalNodeProperties.add(newEnvVarsNodeProperty);
-                envVars = newEnvVarsNodeProperty.getEnvVars();
-            } else {
-                envVars = envVarsNodePropertyList.get(0).getEnvVars();
-            }
-            envVars.put(key, value);
+        List<EnvironmentVariablesNodeProperty> envVarsNodePropertyList = globalNodeProperties.getAll(EnvironmentVariablesNodeProperty.class);
 
-            instance.save();
-        } catch (IOException e) {
-            e.printStackTrace();
+        EnvironmentVariablesNodeProperty newEnvVarsNodeProperty = null;
+        EnvVars envVars = null;
+
+        if ( envVarsNodePropertyList == null || envVarsNodePropertyList.size() == 0 ) {
+            newEnvVarsNodeProperty = new hudson.slaves.EnvironmentVariablesNodeProperty();
+            globalNodeProperties.add(newEnvVarsNodeProperty);
+            envVars = newEnvVarsNodeProperty.getEnvVars();
+        } else {
+            envVars = envVarsNodePropertyList.get(0).getEnvVars();
         }
+        envVars.put(key, value);
+
+        instance.save();
     }
 
     @Override
@@ -169,7 +168,7 @@ public class WsapBuilder extends Builder implements SimpleBuildStep,ConsoleSuppo
         return true;
     }
 
-    private void generateCriticalEnvVariables(BuildListener listener, JSONObject vulnerabilityAudit) {
+    private void generateCriticalEnvVariables(BuildListener listener, JSONObject vulnerabilityAudit) throws IOException {
         createGlobalEnvironmentVariables(envVar.toUpperCase(), targetUrl);
         listener.getLogger().println(String.format("Created variable %s with the targetUrl",envVar.toUpperCase()));
 
@@ -225,151 +224,78 @@ public class WsapBuilder extends Builder implements SimpleBuildStep,ConsoleSuppo
 
         listener.getLogger().println("Trying to connect on ip: " + ipAddress + ":" + 9999);
         Socket socket = new Socket(ipAddress, 9999);
-        DataInputStream in = new DataInputStream(socket.getInputStream());
-        BufferedReader br = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+        if (socket.isConnected()) {
+            listener.getLogger().println("Connected");
 
-        //DataInputStream in = new DataInputStream(s.getInputStream());
-        listener.getLogger().println("Connected");
+            //Create stream
+            DataInputStream in = new DataInputStream(socket.getInputStream());
+            InputStreamReader stream = new InputStreamReader(socket.getInputStream(), Charset.forName("UTF-8"));
+            BufferedReader br = new BufferedReader(stream);
 
-        //Sending form data
-        JSONObject sendData = generateJSON();
-        listener.getLogger().println("Sending defined parameters to WSAP instance");
-        OutputStreamWriter out = new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8);
-        out.write(sendData.toString());
-        out.flush();
 
-        //Receiving feedback
-        listener.getLogger().println("Waiting for server response... May take a few hours");
+            //Sending form data
+            JSONObject sendData = generateJSON();
+            listener.getLogger().println("Sending defined parameters to WSAP instance");
+            OutputStreamWriter out = new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8);
+            out.write(sendData.toString());
+            out.flush();
 
-        StringBuffer buffer = new StringBuffer();
-        boolean interrupted = false;
-        while(!interrupted) {
-            int ch = br.read();
-            buffer.append((char) ch);
+            //Receiving feedback
+            listener.getLogger().println("Waiting for server response... May take a few hours");
 
-            if (Utils.isJSONValid(buffer.toString())) {
-                JSONObject jsonObject = JSONObject.fromObject(buffer.toString());
-                if (jsonObject.containsKey("info")) {
-                    listener.getLogger().println(jsonObject.get("info"));
-                } else {
-                    interrupted = true;
-                    if (jsonObject.containsKey("error")) {
-                        throw new IOException(jsonObject.get("error").toString());
+            StringBuffer buffer = new StringBuffer();
+            boolean interrupted = false;
+            while (!interrupted) {
+                int ch = br.read();
+                buffer.append((char) ch);
+
+                if (Utils.isJSONValid(buffer.toString())) {
+                    JSONObject jsonObject = JSONObject.fromObject(buffer.toString());
+                    if (jsonObject.containsKey("info")) {
+                        listener.getLogger().println(jsonObject.get("info"));
                     } else {
-                        vulnerabilityAudit = jsonObject;
+                        interrupted = true;
+                        if (jsonObject.containsKey("error")) {
+                            throw new IOException(jsonObject.get("error").toString());
+                        } else {
+                            vulnerabilityAudit = jsonObject;
+                        }
                     }
+                    buffer.setLength(0);
                 }
-                buffer.setLength(0);
+            }
+
+            br.close();
+            in.close();
+            socket.close();
+
+            //Process json report and present it
+            Iterator<String> tools = (Iterator<String>) vulnerabilityAudit.keys();
+            while (tools.hasNext()) {
+                String tool = tools.next();
+                listener.getLogger().println("\n" + tool);
+
+                //Gets an object with all security levels (High, Medium, Low, Info)
+                JSONObject securityLevels = vulnerabilityAudit.getJSONObject(tool);
+                Iterator<String> levelsKeys = (Iterator<String>) securityLevels.keys();
+                if (!levelsKeys.hasNext()) listener.getLogger().println(String.format("- No report found"));
+                while (levelsKeys.hasNext()) {
+                    String level = levelsKeys.next();
+                    String value = String.valueOf(securityLevels.get(level));
+                    listener.getLogger().println(String.format("- %s [%s]", level, value));
+                }
             }
         }
-
-        br.close();
-        in.close();
-        socket.close();
-
-        //Process json report and present it
-        Iterator<String> tools = (Iterator<String>) vulnerabilityAudit.keys();
-        while (tools.hasNext()) {
-            String tool = tools.next();
-            listener.getLogger().println("\n"+tool);
-
-            //Gets an object with all security levels (High, Medium, Low, Info)
-            JSONObject securityLevels = vulnerabilityAudit.getJSONObject(tool);
-            Iterator<String> levelsKeys = (Iterator<String>) securityLevels.keys();
-            if (!levelsKeys.hasNext()) listener.getLogger().println(String.format("- No report found"));
-            while (levelsKeys.hasNext()) {
-                String level = levelsKeys.next();
-                String value = String.valueOf(securityLevels.get(level));
-                listener.getLogger().println(String.format("- %s [%s]",level, value));
-            }
-        }
-
         return vulnerabilityAudit;
-    }
-
-    public String performAnalysis(BuildListener listener, Session session, String username) throws JSchException, IOException {
-        listener.getLogger().println(String.format("Attempting to ssh as %s:",username));
-        String command = String.format("python3 %s/main.py %s",wsapLocation, generateJSON());
-        listener.getLogger().println(command);
-
-        String report_location = "";
-
-        ChannelExec channel = (ChannelExec) session.openChannel("exec");
-        channel.setCommand(command);
-        System.out.println("Connected");
-        channel.setInputStream(null);
-        channel.setErrStream(System.err);
-        InputStream in=channel.getInputStream();
-        channel.connect();
-
-        //Display console output
-        byte[] tmp=new byte[1024];
-        while(true){
-            while(in.available()>0){
-                int i=in.read(tmp, 0, 1024);
-                if(i<0)break;
-                String textBlock = new String(tmp, 0, i);
-                listener.getLogger().println(textBlock);
-
-                String[] lines = textBlock.split("\n");
-                boolean bufferHasLines = lines.length > 0;
-                if (bufferHasLines){
-                    report_location = lines[lines.length-1];
-                }
-            }
-            if(channel.isClosed()){
-                System.out.println("Current report_location: "+report_location);
-                listener.getLogger().println("exit-status: "+channel.getExitStatus());
-                break;
-            }
-            try{Thread.sleep(1000);}catch(Exception ee){}
-        }
-        channel.disconnect();
-
-        return report_location;
-    }
-
-    private JSONObject retrieveReport(BuildListener listener, Session session, String username, String reportFilePath) throws JSchException, SftpException {
-        listener.getLogger().println(String.format("Attempting to ssh as %s:",username));
-        listener.getLogger().println("Retrieving vulnerability audit file: "+reportFilePath);
-
-        JSONObject jsonReport = new JSONObject();
-
-        Channel channel = session.openChannel("sftp");
-        channel.connect();
-        ChannelSftp sftpChannel = (ChannelSftp) channel;
-
-        InputStream stream = sftpChannel.get(reportFilePath);
-        try {
-            StringBuilder sb = new StringBuilder();
-            BufferedReader br = new BufferedReader(new InputStreamReader(stream));
-            String line;
-            while ((line = br.readLine()) != null) {
-                sb.append(line);
-            }
-            jsonReport = (JSONObject) JSONSerializer.toJSON(sb.toString());
-
-        } catch (IOException io) {
-            System.out.println("Exception occurred during reading file from SFTP server due to " + io.getMessage());
-            io.getMessage();
-
-        } catch (Exception e) {
-            System.out.println("Exception occurred during reading file from SFTP server due to " + e.getMessage());
-            e.getMessage();
-
-        }
-        sftpChannel.exit();
-
-        return jsonReport;
     }
 
     @Extension
     public static final class DescriptorImpl extends BuildStepDescriptor<Builder> {
-        public String WSAP_LOCATION;
-        public String TARGET_URL;
-        public String ENV_VAR;
-        public String SCANNER_IP;
-        public String SCANNER_PORT;
+        @Getter @Setter private String WSAP_LOCATION;
+        @Getter @Setter private String TARGET_URL;
+        @Getter @Setter private String ENV_VAR;
+        @Getter @Setter private String SCANNER_IP;
+        @Getter @Setter private String SCANNER_PORT;
 
         public DescriptorImpl() {
             load();
@@ -408,7 +334,7 @@ public class WsapBuilder extends Builder implements SimpleBuildStep,ConsoleSuppo
 
         public FormValidation doCheckPort(@QueryParameter String port){
             try{
-                if (Long.valueOf(port)<0) {
+                if (Long.parseLong(port)<0) {
                     return FormValidation.error("Please enter a positive number");
                 }else{
                     return FormValidation.ok();

@@ -59,6 +59,8 @@ public class ScanMethod extends Entry implements ConsoleSupport {
             case "AJAX":
                 json.put("scan.mode", "AJAX");
                 break;
+            default:
+                System.out.println("No scan method selected");
         }
         return json;
     }
@@ -66,8 +68,8 @@ public class ScanMethod extends Entry implements ConsoleSupport {
     @Extension
     public static class DescriptorImpl extends Descriptor<Entry> {
         public static final String DEFAULT_SCAN = "FULL";
-        public String API_URL;
-        public String API_DEFINITION;
+        @Getter @Setter private String API_URL;
+        @Getter @Setter private String API_DEFINITION;
 
         public DescriptorImpl() {
             load();

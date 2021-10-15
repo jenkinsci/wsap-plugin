@@ -86,10 +86,10 @@ public class LoginProperties extends Entry implements ConsoleSupport {
 
     @Extension
     public static class DescriptorImpl extends Descriptor<Entry> {
-        public String LOGIN_URL;
-        public String JSON_LOGIN_REQUEST;
-        public String JSON_LOGIN_USERNAME_FIELD;
-        public String JSON_LOGIN_PASSWORD_FIELD;
+        @Getter @Setter private String LOGIN_URL;
+        @Getter @Setter private String JSON_LOGIN_REQUEST;
+        @Getter @Setter private String JSON_LOGIN_USERNAME_FIELD;
+        @Getter @Setter private String JSON_LOGIN_PASSWORD_FIELD;
         //public String LOGGED_IN_REGGEX;
         //public String LOGGED_OUT_REGGEX;
 
@@ -129,8 +129,15 @@ public class LoginProperties extends Entry implements ConsoleSupport {
          * @return
          */
         public List<Descriptor> getHeadersDescriptors() {
-            Jenkins jenkins=Jenkins.getInstanceOrNull();
-            return ImmutableList.of(jenkins.getDescriptor(HeaderEntry.class));
+            Jenkins jenkins = Jenkins.getInstanceOrNull();
+            if (jenkins == null) return Collections.emptyList();
+
+            Descriptor descriptor = jenkins.getDescriptor(HeaderEntry.class);
+            if (descriptor != null) {
+                return ImmutableList.of(descriptor);
+            }
+
+            return Collections.emptyList();
         }
 
         /**
@@ -139,8 +146,15 @@ public class LoginProperties extends Entry implements ConsoleSupport {
          * @return
          */
         public List<Descriptor> getUsersDescriptors() {
-            Jenkins jenkins=Jenkins.getInstanceOrNull();
-            return ImmutableList.of(jenkins.getDescriptor(UserEntry.class));
+            Jenkins jenkins = Jenkins.getInstanceOrNull();
+            if (jenkins == null) return Collections.emptyList();
+
+            Descriptor descriptor = jenkins.getDescriptor(UserEntry.class);
+            if (descriptor != null) {
+                return ImmutableList.of(descriptor);
+            }
+
+            return Collections.emptyList();
         }
 
     }

@@ -11,7 +11,7 @@
     <groupId>io.jenkinsci.security</groupId>
     <artifactId>wsap</artifactId>
     <name>Web Security Application Project (WSAP)</name>
-    <version>${revision}${changelist}</version>
+    <version>1.0</version>
     <packaging>hpi</packaging>
     <properties>
         <revision>1.0</revision>
@@ -20,9 +20,11 @@
         <jenkins.version>2.289</jenkins.version>
         <java.level>8</java.level>
         <gitHubRepo>jenkinsci/${project.artifactId}-plugin</gitHubRepo>
+        <exclude>InjectedTest.java</exclude>
     </properties>
     <url>https://github.com/jenkinsci/${project.artifactId}-plugin</url>
-
+	
+		
     <dependencyManagement>
         <dependencies>
             <dependency>
@@ -54,41 +56,21 @@
             <version>1.18.20</version>
             <scope>provided</scope>
         </dependency>
-        <dependency>
-            <groupId>org.jenkins-ci.plugins</groupId>
-            <artifactId>structs</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.jenkins-ci.plugins.workflow</groupId>
-            <artifactId>workflow-cps</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.jenkins-ci.plugins.workflow</groupId>
-            <artifactId>workflow-job</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.jenkins-ci.plugins.workflow</groupId>
-            <artifactId>workflow-basic-steps</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.jenkins-ci.plugins.workflow</groupId>
-            <artifactId>workflow-durable-task-step</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.jenkins-ci.modules</groupId>
-            <artifactId>launchd-slave-installer</artifactId>
-            <version>1.2</version>
-            <scope>compile</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.jenkins-ci.plugins.workflow</groupId>
-            <artifactId>workflow-step-api</artifactId>
-        </dependency>
     </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.jenkins-ci.tools</groupId>
+                <artifactId>maven-hpi-plugin</artifactId>
+                <version>3.17</version>
+                <configuration>
+                    <minimumJavaVersion>8</minimumJavaVersion>
+                    <disabledTestInjection>true</disabledTestInjection>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 
     <licenses>
         <license>
@@ -109,7 +91,7 @@
         <connection>scm:git:git://github.com/${gitHubRepo}.git</connection>
         <developerConnection>scm:git:git@github.com:${gitHubRepo}.git</developerConnection>
         <url>https://github.com/${gitHubRepo}</url>
-        <tag>${scmTag}</tag>
+        <tag>wsap-1.0</tag>
     </scm>
 
     <repositories>

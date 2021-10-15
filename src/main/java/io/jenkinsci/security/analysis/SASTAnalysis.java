@@ -26,7 +26,7 @@ public class SASTAnalysis extends Entry implements ConsoleSupport {
 
     @Extension
     public static class DescriptorImpl extends Descriptor<Entry> {
-        public String TARGET;
+        @Getter @Setter private String TARGET;
 
         public DescriptorImpl() {
             load();

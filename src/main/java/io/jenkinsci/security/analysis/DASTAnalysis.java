@@ -61,13 +61,27 @@ public class DASTAnalysis extends Entry implements ConsoleSupport {
     @Extension
     public static class DescriptorImpl extends Descriptor<Entry> {
         public List<Descriptor> getIncludeDescriptors() {
-            Jenkins jenkins=Jenkins.getInstanceOrNull();
-            return ImmutableList.of(jenkins.getDescriptor(IncludeEntry.class));
+            Jenkins jenkins = Jenkins.getInstanceOrNull();
+            if (jenkins == null) return Collections.emptyList();
+
+            Descriptor descriptor = jenkins.getDescriptor(IncludeEntry.class);
+            if (descriptor != null) {
+                return ImmutableList.of(descriptor);
+            }
+
+            return Collections.emptyList();
         }
 
         public List<Descriptor> getExcludeDescriptors() {
-            Jenkins jenkins=Jenkins.getInstanceOrNull();
-            return ImmutableList.of(jenkins.getDescriptor(ExcludeEntry.class));
+            Jenkins jenkins = Jenkins.getInstanceOrNull();
+            if (jenkins == null) return Collections.emptyList();
+
+            Descriptor descriptor = jenkins.getDescriptor(ExcludeEntry.class);
+            if (descriptor != null) {
+                return ImmutableList.of(descriptor);
+            }
+
+            return Collections.emptyList();
         }
     }
 }

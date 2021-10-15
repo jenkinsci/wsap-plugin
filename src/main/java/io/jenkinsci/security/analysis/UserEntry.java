@@ -31,8 +31,8 @@ public class UserEntry extends Entry implements ConsoleSupport {
 
     @Extension
     public static class DescriptorImpl extends Descriptor<Entry> {
-        public String DEFAULT_USERNAME;
-        public String DEFAULT_PASSWORD;
+        @Getter @Setter private String DEFAULT_USERNAME;
+        @Getter @Setter private String DEFAULT_PASSWORD;
 
         public DescriptorImpl() {
             load();
